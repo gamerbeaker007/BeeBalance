@@ -5,6 +5,10 @@ from beem.exceptions import AccountDoesNotExistsException
 from src.api import hive
 from src.util.card import create_card, card_style
 
+hive_icon_url = "https://files.peakd.com/file/peakd-hive/beaker007/AJpkTfBdpYojJYRFeoMZWprXbLf1ZeNZo83HSpomKJEjr5QMZMjLXbxfm4bEhVr.png"
+hbd_icon_url = "https://files.peakd.com/file/peakd-hive/beaker007/AJbhBb9Ev3i1cHKtjoxtsCAaXK9njP56dzMwBRwfZVZ21WseKsCa6bM1q79mqFg.svg"
+curation_icon_url = "https://d36mxiodymuqjm.cloudfront.net/website/ui_elements/shop/img_credits.png"
+
 
 def determine_emoji(ratio):
     print(ratio)
@@ -28,7 +32,10 @@ def get_page(account_name):
         account = Account(account_name)
         if account is not None:
             balances = hive.get_hive_balances(account)
-
+            hive_balance = round(balances['HIVE'].iloc[0], 2)
+            hp_balance = round(balances['HP'].iloc[0], 2)
+            hbd_balance = round(balances['HBD'].iloc[0], 2)
+            curation_reward_balance = round(balances['Curation Rewards'].iloc[0], 2)
             # Apply card CSS
             st.markdown(card_style, unsafe_allow_html=True)
 
@@ -39,8 +46,8 @@ def get_page(account_name):
                 st.markdown(
                     create_card(
                         "HIVE",
-                        f"{round(balances['HIVE'].iloc[0], 2)} HIVE",
-                        "https://files.peakd.com/file/peakd-hive/beaker007/AJpkTfBdpYojJYRFeoMZWprXbLf1ZeNZo83HSpomKJEjr5QMZMjLXbxfm4bEhVr.png",
+                        f"{hive_balance} HIVE",
+                        hive_icon_url,
                     ),
                     unsafe_allow_html=True,
                 )
@@ -49,8 +56,8 @@ def get_page(account_name):
                 st.markdown(
                     create_card(
                         "HP (Hive Powered Up)",
-                        f"{round(balances['HP'].iloc[0], 2)} HIVE",
-                        "https://files.peakd.com/file/peakd-hive/beaker007/AJpkTfBdpYojJYRFeoMZWprXbLf1ZeNZo83HSpomKJEjr5QMZMjLXbxfm4bEhVr.png",
+                        f"{hp_balance} HIVE",
+                        hive_icon_url,
                     ),
                     unsafe_allow_html=True,
                 )
@@ -58,8 +65,8 @@ def get_page(account_name):
                 st.markdown(
                     create_card(
                         "HBD",
-                        f"{round(balances['HBD'].iloc[0], 2)} $",
-                        "https://files.peakd.com/file/peakd-hive/beaker007/AJbhBb9Ev3i1cHKtjoxtsCAaXK9njP56dzMwBRwfZVZ21WseKsCa6bM1q79mqFg.svg",
+                        f"{hbd_balance} $",
+                        hbd_icon_url,
                     ),
                     unsafe_allow_html=True,
                 )
@@ -67,8 +74,8 @@ def get_page(account_name):
                 st.markdown(
                     create_card(
                         "Received Curation Rewards",
-                        f"{round(balances['Curation Rewards'].iloc[0], 2)} HIVE",
-                        "https://d36mxiodymuqjm.cloudfront.net/website/ui_elements/shop/img_credits.png",
+                        f"{curation_reward_balance} HIVE",
+                        curation_icon_url,
                     ),
                     unsafe_allow_html=True,
                 )
@@ -76,7 +83,7 @@ def get_page(account_name):
             st.title(':blue[KE Ratio]: ' + str(round(balances.Ratio.iloc[0], 2)) + ' ' + determine_emoji(balances.Ratio.iloc[0]))
             st.write('As a reminder KE Ratio is not everything please read the following post: ')
             st.write('TODO add link')
-            with st.expander("Balances data table", expanded=False):
+            with st.expander("Hive balances data", expanded=False):
                 st.dataframe(balances, hide_index=True)
         else:
             st.write('Enter valid hive account name')

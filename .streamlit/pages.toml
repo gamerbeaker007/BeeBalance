@@ -1,0 +1,4 @@
+[[pages]]
+path = 'src/pages/main_page.py'
+name = 'Bee Balanced'
+icon = ':bar_chart:'

@@ -1,0 +1,8 @@
+requests==2.32.3
+urllib3==2.2.2
+st-pages==1.0.1
+pandas~=2.2.3
+beem==0.24.26
+hiveengine~=0.2.2
+# already in streamlit env
+# streamlit~=1.41.1

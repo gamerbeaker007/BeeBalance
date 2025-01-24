@@ -5,7 +5,7 @@ from src.util import spl_util
 
 
 def get_page(account_name):
-    st.title('Splinterlands Balances')
+    st.title('Splinterlands "Estimated" Balances')
     if spl.player_exist(account_name):
         spl_balances = spl_util.get_portfolio_value(account_name)
         st.dataframe(spl_balances, hide_index=True)

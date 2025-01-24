@@ -2,8 +2,8 @@ import streamlit as st
 from beem.account import Account
 from beem.exceptions import AccountDoesNotExistsException
 
-from src.api import hive
-from src.util.card import create_card, card_style
+from src.api import hive, hivebuzz
+from src.util.card import create_card
 
 hive_icon_url = "https://files.peakd.com/file/peakd-hive/beaker007/AJpkTfBdpYojJYRFeoMZWprXbLf1ZeNZo83HSpomKJEjr5QMZMjLXbxfm4bEhVr.png"
 hbd_icon_url = "https://files.peakd.com/file/peakd-hive/beaker007/AJbhBb9Ev3i1cHKtjoxtsCAaXK9njP56dzMwBRwfZVZ21WseKsCa6bM1q79mqFg.svg"
@@ -27,20 +27,26 @@ def determine_emoji(ratio):
 
 
 def get_page(account_name):
-    st.title('Hive balances')
+    st.title('Hive buzz stats')
+
     try:
         account = Account(account_name)
-        if account is not None:
-            balances = hive.get_hive_balances(account)
-            hive_balance = round(balances['HIVE'].iloc[0], 2)
-            hp_balance = round(balances['HP'].iloc[0], 2)
-            hbd_balance = round(balances['HBD'].iloc[0], 2)
-            curation_reward_balance = round(balances['Curation Rewards'].iloc[0], 2)
-            # Apply card CSS
-            st.markdown(card_style, unsafe_allow_html=True)
+        balances = hive.get_hive_balances(account)
+        hive_balance = int(balances['HIVE'].iloc[0])
+        hbd_balance = int(balances['HBD'].iloc[0])
+
+        stats = hivebuzz.get_stats(account_name)
+        if not stats.empty:
+            stats['hive'] = [hive_balance]
+            stats['hbd'] = [hbd_balance]
+            hp_balance = stats['hp'].iloc[0]
+            curation_rewards = stats['curation_rewards'].iloc[0]
+            author_rewards = stats['author_rewards'].iloc[0]
+            ke_ratio = (author_rewards + curation_rewards) / hp_balance
+            stats['ratio'] = [ke_ratio]
 
             # Display the cards in a row
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
 
             with col1:
                 st.markdown(
@@ -61,6 +67,7 @@ def get_page(account_name):
                     ),
                     unsafe_allow_html=True,
                 )
+
             with col3:
                 st.markdown(
                     create_card(
@@ -73,18 +80,28 @@ def get_page(account_name):
             with col4:
                 st.markdown(
                     create_card(
-                        "Received Curation Rewards",
-                        f"{curation_reward_balance} HIVE",
+                        "Author rewards",
+                        f"{author_rewards} HIVE",
+                        curation_icon_url,
+                    ),
+                    unsafe_allow_html=True,
+                )
+            with col5:
+                st.markdown(
+                    create_card(
+                        "Curation rewards",
+                        f"{curation_rewards} HIVE",
                         curation_icon_url,
                     ),
                     unsafe_allow_html=True,
                 )
 
-            st.title(':blue[KE Ratio]: ' + str(round(balances.Ratio.iloc[0], 2)) + ' ' + determine_emoji(balances.Ratio.iloc[0]))
+            st.title(':blue[KE Ratio]: ' + str(round(ke_ratio, 2)) + ' ' + determine_emoji(ke_ratio))
+            st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
             st.write('As a reminder KE Ratio is not everything please read the following post: ')
             st.write('TODO add link')
             with st.expander("Hive balances data", expanded=False):
-                st.dataframe(balances, hide_index=True)
+                st.dataframe(stats, hide_index=True)
         else:
             st.write('Enter valid hive account name')
     except AccountDoesNotExistsException:

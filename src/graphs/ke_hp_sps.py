@@ -14,9 +14,12 @@ def determine_label(row):
 
 def add_ke_ratio_graph(df):
     df.fillna(0, inplace=True)
-    # Get Streamlit's theme settings
+
     theme = st_theme()
-    is_dark_theme = theme['base'] == "dark"
+    if theme:
+        is_dark_theme = theme['base'] == "dark"
+    else:
+        is_dark_theme = True
 
     background_color = "#ffffff" if not is_dark_theme else "#0e1117"  # Light or dark background
     text_color = "#000000" if not is_dark_theme else "#ffffff"  # Light or dark text

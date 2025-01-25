@@ -3,7 +3,7 @@ from time import sleep
 
 import pandas as pd
 
-from src.api import spl, hive, hive_engine
+from src.api import spl, hive_engine
 
 
 def get_all_tokens(account_name):

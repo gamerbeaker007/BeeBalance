@@ -1,15 +1,20 @@
 import streamlit as st
 
-from src.pages import hive_balances, spl_balances, hive_balances
+from src.pages import spl_balances, hivesql_balances
 from src.util.card import card_style
 
 
 def get_page():
-    account_name = st.text_input('account name')
-    if account_name:
+    # Get the input from the user
+    account_names = st.text_input('Enter account names (comma-separated)')
+
+    # Split the input into a list of account names
+    account_names = [name.strip() for name in account_names.split(",") if name.strip()]
+    if account_names:
         st.markdown(card_style, unsafe_allow_html=True)
-        hive_balances.get_page(account_name)
-        spl_balances.get_page(account_name)
+        hivesql_balances.get_page(account_names)
+        if len(account_names) == 1:
+            spl_balances.get_page(account_names[0])
 
         # TODO combined data table with columns
         #     HP

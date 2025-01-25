@@ -24,9 +24,12 @@ pg = st.navigation(nav)
 
 add_page_title(pg)
 
+placeholder = st.empty()
+
 # Dynamically call the page-specific function based on the selected page
 if pg.title == "Bee Balanced":
-    main_page.get_page()
+    with placeholder.container():
+        main_page.get_page()
 if pg.title == "Comments List":
-    comments_list_page.get_page()
-pg.run()
+    with placeholder.container():
+        comments_list_page.get_page()

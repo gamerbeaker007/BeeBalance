@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.pages.main_subpages import spl_balances, hivesql_balances, spl_balances_extra
+from src.pages.main_subpages import spl_balances, hivesql_balances, spl_balances_extra, spl_assets
 from src.util.card import card_style
 
 
@@ -14,6 +14,7 @@ def get_page():
         st.markdown(card_style, unsafe_allow_html=True)
         df = hivesql_balances.get_page(account_names)
         df = spl_balances.get_page(df)
+        df = spl_assets.get_page(df)
         if len(account_names) == 1:
             spl_balances_extra.get_page(account_names[0])
 

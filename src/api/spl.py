@@ -154,3 +154,14 @@ def player_exist(account_name):
         return True
     else:
         return False
+
+
+@st.cache_data(ttl="1h")
+def get_player_details(account_name):
+    address = base_url + 'players/details'
+    params = {'name': account_name}
+    result = http.get(address, params=params)
+    if result.status_code == 200 and 'error' not in result.json():
+        return result.json()
+    else:
+        return None

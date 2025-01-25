@@ -8,6 +8,7 @@ sps_icon_url = WEB_URL + 'website/ui_elements/shop/cl/img_sps-shard_128.png'
 credits_icon_url = WEB_URL + 'website/ui_elements/shop/img_credits.png'
 other_icon_url = WEB_URL + 'website/nav/icon_nav_items_active@2x.png'
 license_icon_url = WEB_URL + 'website/ui_elements/sps_management/img_node.png'
+cards_icon_url = WEB_URL + 'website/ui_elements/open_packs/packsv2/img_pack_chaos-legion_opt.png'
 voucher_icon_url = ('https://files.peakd.com/file/peakd-hive/beaker007'
                     '/Eo8RPwT4kQnGyvkNp9Vx1kLpFYYVhKSy88Fsy7YrAStKwrHCRX6GNvhywGxPbQpW2bu.png')
 

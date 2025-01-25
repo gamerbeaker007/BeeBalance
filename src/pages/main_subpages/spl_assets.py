@@ -1,0 +1,79 @@
+import streamlit as st
+
+from src.api import spl
+from src.static import icons
+from src.util.card import create_card
+
+extra_columns = [
+    'collection_power',
+    'deeds',
+]
+
+
+def add_assets(row, placeholder):
+    placeholder.text(f"Loading SPL Balances for account: {row['name']}")
+
+    # Specify tokens to filter
+
+    player_details = spl.get_player_details(row["name"])
+
+    # Pivot the balances DataFrame
+    if not player_details:
+        # Return the original row if no balances are found
+        return row
+
+    row['collection_power'] = player_details['collection_power']
+
+    player_deeds = spl.get_deeds_collection(row['name'])
+    if not player_deeds:
+        return row
+
+    row['deeds'] = len(player_deeds)
+    return row
+
+
+def get_page(df):
+    st.title('Splinterlands Assets')
+
+    # Create a dynamic placeholder for loading text
+    loading_placeholder = st.empty()
+
+    with st.spinner('Loading data... Please wait.'):
+        # Use a custom merge to ensure column order is preserved
+        spl_assets = df.apply(lambda row: add_assets(row, loading_placeholder), axis=1)
+
+    loading_placeholder.empty()
+
+    for col in extra_columns:
+        if col not in spl_assets.columns:
+            spl_assets[col] = 0
+
+    # Ensure original columns appear first
+    spl_assets = spl_assets[list(df.columns) + extra_columns]
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown(
+            create_card(
+                "Collection Power",
+                f"{spl_assets['collection_power'].sum()} CP",
+                icons.cards_icon_url,
+            ),
+            unsafe_allow_html=True,
+        )
+
+    with col2:
+        st.markdown(
+            create_card(
+                "Deeds",
+                f"{spl_assets['deeds'].sum()} #",
+                icons.land_icon_url_svg,
+            ),
+            unsafe_allow_html=True,
+        )
+
+    with st.expander("Hive+SPL balances + SPL Assets data", expanded=False):
+        st.dataframe(spl_assets, hide_index=True)
+
+    return spl_assets

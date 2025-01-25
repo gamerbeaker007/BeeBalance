@@ -15,7 +15,7 @@ token_columns = [
         'TRACT',
         'REGION',
         'VOUCHER',
-        'CREDIT'
+        'CREDITS'
     ]
 
 
@@ -106,8 +106,8 @@ def get_page(df):
         st.markdown(
             create_card(
                 "Credits",
-                f"{sps_balances['CREDIT'].sum()} CREDITS",
-                icons.license_icon_url,
+                f"{sps_balances['CREDITS'].sum()} CREDITS",
+                icons.credits_icon_url,
             ),
             unsafe_allow_html=True,
         )

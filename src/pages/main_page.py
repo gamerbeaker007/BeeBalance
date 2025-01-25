@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import streamlit as st
 
 from src.pages.main_subpages import spl_balances, hivesql_balances, spl_balances_extra, spl_assets
@@ -13,6 +15,11 @@ def get_page():
     if account_names:
         st.markdown(card_style, unsafe_allow_html=True)
         df = hivesql_balances.get_page(account_names)
+
+        # Add date column
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df.insert(0, "date", current_datetime)
+
         df = spl_balances.get_page(df)
         df = spl_assets.get_page(df)
         if len(account_names) == 1:

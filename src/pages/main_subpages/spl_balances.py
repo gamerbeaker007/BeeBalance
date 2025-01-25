@@ -122,7 +122,6 @@ def get_page(df):
 
     if df.name.index.size > 1:
         ke_hp_sps.add_ke_ratio_graph(sps_balances[['name', 'ke_ratio', 'hp', 'SPSP']])
-        print("do graph")
 
     with st.expander("Hive+SPL balances data", expanded=False):
         st.dataframe(sps_balances, hide_index=True)

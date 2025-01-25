@@ -13,7 +13,7 @@ def determine_label(row):
 
 
 def add_ke_ratio_graph(df):
-    df.fillna(0, inplace=True)
+    df = df.fillna(0)
 
     theme = st_theme()
     if theme:
@@ -39,7 +39,11 @@ def add_ke_ratio_graph(df):
                 sizeref=2. * max(df['SPSP']) / (40.**2),  # Normalize bubble size
                 color=df['ke_ratio'],  # Color by ke_ratio (optional gradient)
                 colorscale='Viridis',  # Adjust to preferred color scale
-                showscale=True
+                showscale=True,
+                line=dict(
+                    color='white',  # Border color
+                    width=2  # Border width
+                )
             ),
             text=[determine_label(row) for _, row in df.iterrows()],  # Hover text
             hoverinfo='text',  # Show custom hover text

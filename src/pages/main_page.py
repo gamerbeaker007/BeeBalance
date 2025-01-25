@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.pages import spl_balances, hivesql_balances
+from src.pages import spl_balances_extra, hivesql_balances, spl_balances
 from src.util.card import card_style
 
 
@@ -12,9 +12,10 @@ def get_page():
     account_names = [name.strip() for name in account_names.split(",") if name.strip()]
     if account_names:
         st.markdown(card_style, unsafe_allow_html=True)
-        hivesql_balances.get_page(account_names)
+        df = hivesql_balances.get_page(account_names)
+        df = spl_balances.get_page(df)
         if len(account_names) == 1:
-            spl_balances.get_page(account_names[0])
+            spl_balances_extra.get_page(account_names[0])
 
         # TODO combined data table with columns
         #     HP

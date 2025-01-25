@@ -6,14 +6,7 @@ import pandas as pd
 from src.api import spl, hive_engine
 
 
-def get_all_tokens(account_name):
-    all_assets = {}
-    for token in spl.get_balances(account_name):
-        all_assets[token["token"]] = token["balance"]
-    return all_assets
-
-
-def calculate_prices(df, all_tokens, hive_in_dollar):
+def calculate_prices(df, balance_df, hive_in_dollar):
     # Exclude this list because they are not on hive engine.
     # Currently,  calculate value on hive engine because to be conservative lower values iso of internal SPL market.
     exclude_list = [
@@ -33,7 +26,10 @@ def calculate_prices(df, all_tokens, hive_in_dollar):
         'SPSP-OUT'
     ]
 
-    for token in all_tokens:
+    for index, row in balance_df.iterrows():
+
+        token = row.token
+        balance = row.balance
         if token not in exclude_list:
             if token == 'SPSP':
                 token_market = hive_engine.get_market_with_retry('SPS')
@@ -45,7 +41,7 @@ def calculate_prices(df, all_tokens, hive_in_dollar):
                 token_market = hive_engine.get_market_with_retry(token)
 
             if token_market:
-                quantity = all_tokens[token]
+                quantity = balance
                 hive_value = float(token_market["highestBid"])
                 value = round(hive_value * hive_in_dollar * quantity, 2)
                 if quantity:
@@ -53,19 +49,19 @@ def calculate_prices(df, all_tokens, hive_in_dollar):
                     df[str(token.lower()) + '_value'] = value
 
         if token == 'CREDITS':
-            df[str(token.lower()) + '_qty'] = all_tokens[token]
-            df[str(token.lower()) + '_value'] = round(all_tokens[token] * 0.001, 2)
+            df[str(token.lower()) + '_qty'] = balance
+            df[str(token.lower()) + '_value'] = round(balance * 0.001, 2)
 
     return df
 
 
 def get_token_value(account):
     hive_in_dollar = float(spl.get_prices()['hive'])
-    all_tokens = get_all_tokens(account)
+    spl_balances = spl.get_balances(account)[['token', 'balance']]
     df = pd.DataFrame({'date': datetime.today().strftime('%Y-%m-%d'),
                        'account_name': account},
                       index=[0])
-    df = calculate_prices(df, all_tokens, hive_in_dollar)
+    df = calculate_prices(df, spl_balances, hive_in_dollar)
     df = get_liquidity_pool(df, account, hive_in_dollar)
     return df
 

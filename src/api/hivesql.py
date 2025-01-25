@@ -1,3 +1,4 @@
+from functools import lru_cache
 import streamlit as st
 import pandas as pd
 import pypyodbc
@@ -17,15 +18,46 @@ connection_string = (
     f"Encrypt=yes"
 )
 
+
 def executeQuery(query, params=None):
-    connection = pypyodbc.connect(connection_string)
-    cursor = connection.cursor()
-    cursor.execute(query, params or ())
-    result = cursor.fetchall()
-    connection.close()
-    return result
+    """
+    Executes a SQL query with optional parameters.
+
+    Parameters:
+    - query: str, the SQL query to execute.
+    - params: list or tuple, optional, the parameters for the query.
+
+    Returns:
+    - list of tuples, the result set from the query.
+    """
+    connection = None
+    try:
+        connection = pypyodbc.connect(connection_string)
+        cursor = connection.cursor()
+
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+
+        try:
+            result = cursor.fetchall()  # Fetch all rows
+        except pypyodbc.ProgrammingError:
+            result = None
+
+        connection.commit()
+
+        return result
+    except pypyodbc.Error as e:
+        print(f"Database error: {e}")
+        raise
+    finally:
+        if connection:
+            connection.close()
 
 
+
+@lru_cache(maxsize=1)
 def get_hive_per_mvest():
     result = executeQuery("SELECT total_vesting_fund_hive, total_vesting_shares  FROM DynamicGlobalProperties")
     if result:  # Ensure result is not empty
@@ -41,14 +73,25 @@ def vest_to_hp(hive_per_mvest, vesting_shares):
     return vesting_shares / 1e6 * hive_per_mvest
 
 
+def batch_list(lst, batch_size):
+    for i in range(0, len(lst), batch_size):
+        yield lst[i:i + batch_size]
+
+
 def get_hive_balances(account_names):
-    # Ensure account_names is a list
     if not isinstance(account_names, list):
         raise ValueError("account_names must be a list")
 
-    # Prepare the query with placeholders for multiple names
-    placeholders = ', '.join(['?'] * len(account_names))
-    query = f"""
+    hive_per_mvest = get_hive_per_mvest()  # Cacheable
+    all_results = []
+
+    # Process account names in batches
+    for batch in batch_list(account_names, batch_size=50):
+        # Create the placeholders for the IN clause
+        placeholders = ', '.join(['?'] * len(batch))
+
+        # SQL query using IN clause
+        query = f"""
         SELECT
             name,
             created,
@@ -56,28 +99,27 @@ def get_hive_balances(account_names):
             CAST(savings_balance AS FLOAT) AS hive_savings,
             CAST(hbd_balance AS FLOAT) AS hbd,
             CAST(savings_hbd_balance AS FLOAT) AS hbd_savings,
-            CAST(reputation AS FLOAT),
-            CAST(vesting_shares AS FLOAT),  
-            CAST(curation_rewards AS FLOAT) / 1000.0 AS curation, 
+            CAST(reputation AS FLOAT) AS reputation,
+            CAST(vesting_shares AS FLOAT) AS vesting_shares,
+            CAST(curation_rewards AS FLOAT) / 1000.0 AS curation,
             CAST(posting_rewards AS FLOAT) / 1000.0 AS posting
         FROM accounts
         WHERE name IN ({placeholders})
-    """
-    # Execute the query with the list of names
-    result = executeQuery(query, account_names)
-    # Define column names to match the query
+        """
+
+        batch_result = executeQuery(query, batch)
+        if batch_result:
+            all_results.extend(batch_result)
+
+    # Define DataFrame columns
     columns = [
         "name", "created", "hive", "hive_savings", "hbd", "hbd_savings",
         "reputation", "vesting_shares", "curation_rewards", "author_rewards"
     ]
 
-    # Create DataFrame
-    df = pd.DataFrame(result, columns=columns)
+    df = pd.DataFrame.from_records(all_results, columns=columns)
 
-    hive_per_mvest = get_hive_per_mvest()
-    df["hp"] = df["vesting_shares"].apply(lambda vesting_shares: vest_to_hp(hive_per_mvest, vesting_shares))
-
-    # Calculate KE ratio
+    df["hp"] = (hive_per_mvest / 1e6) * df["vesting_shares"]
     df["ke_ratio"] = (df["curation_rewards"] + df["author_rewards"]) / df["hp"]
 
     return df

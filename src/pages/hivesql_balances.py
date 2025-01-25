@@ -1,15 +1,11 @@
 import streamlit as st
 
 from src.api import hivesql
+from src.static import icons
 from src.util.card import create_card
-
-hive_icon_url = "https://files.peakd.com/file/peakd-hive/beaker007/AJpkTfBdpYojJYRFeoMZWprXbLf1ZeNZo83HSpomKJEjr5QMZMjLXbxfm4bEhVr.png"
-hbd_icon_url = "https://files.peakd.com/file/peakd-hive/beaker007/AJbhBb9Ev3i1cHKtjoxtsCAaXK9njP56dzMwBRwfZVZ21WseKsCa6bM1q79mqFg.svg"
-curation_icon_url = "https://d36mxiodymuqjm.cloudfront.net/website/ui_elements/shop/img_credits.png"
 
 
 def determine_emoji(ratio):
-    print(ratio)
     if ratio <= 1:
         return ':heart_eyes:'
     elif 1 < ratio <= 3:
@@ -25,16 +21,15 @@ def determine_emoji(ratio):
 
 
 def get_page(account_names):
-    st.title('Hive sql stats')
+    st.title('Hive Balances')
     result = hivesql.get_hive_balances(account_names)
-    if not result.empty and result.index.size == 1:
-        row = result.iloc[0]
-        hive_balance = round(row['hive'] + row['hive_savings'], 2)
-        hbd_balance = round(row['hbd'] + row['hbd_savings'], 2)
-        hp_balance = round(row['hp'], 2)
-        curation_rewards = round(row['curation_rewards'], 2)
-        author_rewards = round(row['author_rewards'], 2)
-        ke_ratio = round(row['ke_ratio'], 2)
+    if not result.empty:
+        hive_balance = round(result['hive'].sum() + result['hive_savings'].sum(), 2)
+        hbd_balance = round(result['hbd'].sum() + result['hbd_savings'].sum(), 2)
+        hp_balance = round(result['hp'].sum(), 2)
+        curation_rewards = round(result['curation_rewards'].sum(), 2)
+        author_rewards = round(result['author_rewards'].sum(), 2)
+        ke_ratio = round(result['ke_ratio'].max(), 2)
 
         # Display the cards in a row
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -44,7 +39,7 @@ def get_page(account_names):
                 create_card(
                     "HIVE",
                     f"{hive_balance} HIVE",
-                    hive_icon_url,
+                    icons.hive_icon_url,
                 ),
                 unsafe_allow_html=True,
             )
@@ -54,7 +49,7 @@ def get_page(account_names):
                 create_card(
                     "HP (Hive Powered Up)",
                     f"{hp_balance} HIVE",
-                    hive_icon_url,
+                    icons.hive_icon_url,
                 ),
                 unsafe_allow_html=True,
             )
@@ -64,7 +59,7 @@ def get_page(account_names):
                 create_card(
                     "HBD",
                     f"{hbd_balance} $",
-                    hbd_icon_url,
+                    icons.hbd_icon_url,
                 ),
                 unsafe_allow_html=True,
             )
@@ -73,7 +68,7 @@ def get_page(account_names):
                 create_card(
                     "Author rewards",
                     f"{author_rewards} HIVE",
-                    curation_icon_url,
+                    icons.credits_icon_url,
                 ),
                 unsafe_allow_html=True,
             )
@@ -82,15 +77,20 @@ def get_page(account_names):
                 create_card(
                     "Curation rewards",
                     f"{curation_rewards} HIVE",
-                    curation_icon_url,
+                    icons.credits_icon_url,
                 ),
                 unsafe_allow_html=True,
             )
 
-        st.title(':blue[KE Ratio]: ' + str(round(ke_ratio, 2)) + ' ' + determine_emoji(ke_ratio))
-        st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
-        st.write('As a reminder KE Ratio is not everything please read the following post: ')
-        st.write('TODO add link')
+        if result.index.size == 1:
+            st.title(':blue[KE Ratio]: ' + str(round(ke_ratio, 2)) + ' ' + determine_emoji(ke_ratio))
+            st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
+            st.write('As a reminder KE Ratio is not everything please read the following post: ')
+            st.write('TODO add link')
+        else:
+            st.title(':blue[KE Ratio]: N/A for multiple accounts')
+            st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
 
     with st.expander("Hive balances data", expanded=False):
         st.dataframe(result, hide_index=True)
+    return result

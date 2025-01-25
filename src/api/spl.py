@@ -43,10 +43,35 @@ def get_settings():
 
 
 @st.cache_data(ttl="1h")
-def get_balances(username):
+def get_balances(username, filter_tokens=None):
     address = base_url + 'players/balances'
     params = {'username': username}
-    return http.get(address, params=params).json()
+    result = http.get(address, params=params).json()
+
+    if result:
+        df = pd.DataFrame(result)
+
+        if filter_tokens:
+            # Filter the dataframe to include only the `filter_tokens`
+            df = df[df["token"].isin(filter_tokens)]
+            # Identify missing tokens
+            existing_tokens = df["token"].unique()
+            missing_tokens = [token for token in filter_tokens if token not in existing_tokens]
+
+            # Create rows for missing tokens with default values
+            missing_rows = pd.DataFrame({
+                "player": [username] * len(missing_tokens),
+                "token": missing_tokens,
+                "balance": [0] * len(missing_tokens),
+            })
+
+            # Combine the existing and missing rows
+            df = pd.concat([df, missing_rows], ignore_index=True)
+            df = df[['player', 'token', 'balance']]
+    else:
+        df = pd.DataFrame()
+
+    return df
 
 
 @st.cache_data(ttl="1h")

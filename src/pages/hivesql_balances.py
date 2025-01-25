@@ -26,7 +26,7 @@ def determine_emoji(ratio):
 
 def get_page(account_names):
     st.title('Hive sql stats')
-    result = hivesql.get_test(account_names)
+    result = hivesql.get_hive_balances(account_names)
     if not result.empty and result.index.size == 1:
         row = result.iloc[0]
         hive_balance = round(row['hive'] + row['hive_savings'], 2)

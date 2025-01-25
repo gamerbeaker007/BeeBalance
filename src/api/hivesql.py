@@ -41,7 +41,7 @@ def vest_to_hp(hive_per_mvest, vesting_shares):
     return vesting_shares / 1e6 * hive_per_mvest
 
 
-def get_test(account_names):
+def get_hive_balances(account_names):
     # Ensure account_names is a list
     if not isinstance(account_names, list):
         raise ValueError("account_names must be a list")

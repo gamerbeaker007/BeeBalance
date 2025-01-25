@@ -8,7 +8,7 @@ db_password = st.secrets["database"]["password"]
 
 # Connection string using secrets
 connection_string = (
-    f"Driver={{ODBC Driver 18 for SQL Server}};"
+    f"Driver={{ODBC Driver 17 for SQL Server}};"
     f"Server=vip.hivesql.io;"
     f"Database=DBHive;"
     f"UID={db_username};"

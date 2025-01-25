@@ -123,3 +123,15 @@ def get_hive_balances(account_names):
     df["ke_ratio"] = (df["curation_rewards"] + df["author_rewards"]) / df["hp"]
 
     return df
+
+
+def get_commentators(permlink):
+    query = f"""
+        SELECT DISTINCT author 
+        FROM comments 
+        WHERE parent_permlink = '{permlink}'   
+        AND depth = 1
+    """
+    authors = executeQuery(query)
+    authors = [row[0] for row in authors]
+    return authors

@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.api import hivesql
+from src.api import hive_sql
 from src.static import icons
 from src.util.card import create_card
 
@@ -22,7 +22,7 @@ def determine_emoji(ratio):
 
 def get_page(account_names):
     st.title('Hive Balances')
-    result = hivesql.get_hive_balances(account_names)
+    result = hive_sql.get_hive_balances(account_names)
     if not result.empty:
         hive_balance = round(result['hive'].sum() + result['hive_savings'].sum(), 2)
         hbd_balance = round(result['hbd'].sum() + result['hbd_savings'].sum(), 2)

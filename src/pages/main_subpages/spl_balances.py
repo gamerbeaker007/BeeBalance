@@ -1,17 +1,11 @@
-from time import sleep
-
 import streamlit as st
 
 from src.api import spl
+from src.graphs import ke_hp_sps
 from src.static import icons
 from src.util.card import create_card
 
-
-def add_token_balances(row, placeholder):
-    placeholder.text(f"Loading SPL Balances for account: {row['name']}")
-
-    # Specify tokens to filter
-    tokens = [
+token_columns = [
         'SPS',
         'SPSP',
         'DEC',
@@ -24,7 +18,13 @@ def add_token_balances(row, placeholder):
         'CREDIT'
     ]
 
-    spl_balances = spl.get_balances(row["name"], filter_tokens=tokens)
+
+def add_token_balances(row, placeholder):
+    placeholder.text(f"Loading SPL Balances for account: {row['name']}")
+
+    # Specify tokens to filter
+
+    spl_balances = spl.get_balances(row["name"], filter_tokens=token_columns)
 
     # Pivot the balances DataFrame
     if spl_balances.empty:
@@ -37,7 +37,12 @@ def add_token_balances(row, placeholder):
     row_df = row.to_frame().T
     merged_row = row_df.merge(pivoted_df, left_on="name", right_on="player", how="left")
 
-    return merged_row.iloc[0]  # Return as a Series
+    # Reorder the columns to ensure original columns are followed by the new ones
+    for col in pivoted_df.columns:
+        if col not in row_df.columns:
+            row_df[col] = pivoted_df[col].iloc[0] if col in pivoted_df.columns else 0
+
+    return row_df.iloc[0]  # Return as a Series
 
 
 def get_page(df):
@@ -47,11 +52,18 @@ def get_page(df):
     loading_placeholder = st.empty()
 
     with st.spinner('Loading data... Please wait.'):
+        # Use a custom merge to ensure column order is preserved
         sps_balances = df.apply(lambda row: add_token_balances(row, loading_placeholder), axis=1)
 
     loading_placeholder.empty()
 
-    sps_balance = sps_balances.iloc[0]
+    for col in token_columns:
+        if col not in sps_balances.columns:
+            sps_balances[col] = 0
+
+    # Ensure original columns appear first
+    sps_balances = sps_balances[list(df.columns) + token_columns]
+
     # Display the cards in a row
     col1, col2, col3 = st.columns(3)
 
@@ -59,7 +71,7 @@ def get_page(df):
         st.markdown(
             create_card(
                 "SPS + Staked SPS",
-                f"{sps_balance['SPS'].sum() + sps_balance['SPSP'].sum()} SPS",
+                f"{sps_balances['SPS'].sum() + sps_balances['SPSP'].sum()} SPS",
                 icons.sps_icon_url,
             ),
             unsafe_allow_html=True,
@@ -67,7 +79,7 @@ def get_page(df):
         st.markdown(
             create_card(
                 "VOUCHERS",
-                f"{sps_balance['VOUCHER'].sum()} VOUCHERS",
+                f"{sps_balances['VOUCHER'].sum()} VOUCHERS",
                 icons.voucher_icon_url,
             ),
             unsafe_allow_html=True,
@@ -77,7 +89,7 @@ def get_page(df):
         st.markdown(
             create_card(
                 "DEC + DEC-B",
-                f"{sps_balance['DEC'].sum() + sps_balance['DEC-B'].sum()} DEC",
+                f"{sps_balances['DEC'].sum() + sps_balances['DEC-B'].sum()} DEC",
                 icons.dec_icon_url,
             ),
             unsafe_allow_html=True,
@@ -85,7 +97,7 @@ def get_page(df):
         st.markdown(
             create_card(
                 "Validator License",
-                f"{sps_balance['LICENSE'].sum()} #",
+                f"{sps_balances['LICENSE'].sum()} #",
                 icons.license_icon_url,
             ),
             unsafe_allow_html=True,
@@ -94,7 +106,7 @@ def get_page(df):
         st.markdown(
             create_card(
                 "Credits",
-                f"{sps_balance['CREDIT'].sum()} CREDITS",
+                f"{sps_balances['CREDIT'].sum()} CREDITS",
                 icons.license_icon_url,
             ),
             unsafe_allow_html=True,
@@ -102,13 +114,17 @@ def get_page(df):
         st.markdown(
             create_card(
                 "Land plots (PLOT+TRACT+REGION)",
-                f"{sps_balance['PLOT'].sum() + sps_balance['TRACT'].sum() + sps_balance['REGION'].sum()} #",
+                f"{sps_balances['PLOT'].sum() + sps_balances['TRACT'].sum() + sps_balances['REGION'].sum()} #",
                 icons.land_icon_url_svg,
             ),
             unsafe_allow_html=True,
         )
 
+    if df.name.index.size > 1:
+        ke_hp_sps.add_ke_ratio_graph(sps_balances[['name', 'ke_ratio', 'hp', 'SPSP']])
+        print("do graph")
+
     with st.expander("Hive+SPL balances data", expanded=False):
         st.dataframe(sps_balances, hide_index=True)
 
-    return df
+    return sps_balances

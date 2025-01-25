@@ -4,7 +4,7 @@ import sys
 import streamlit as st
 from st_pages import get_nav_from_toml, add_page_title
 
-from src.pages import main_page
+from src.pages import main_page, comments_list_page
 
 
 def reload_all():
@@ -27,4 +27,6 @@ add_page_title(pg)
 # Dynamically call the page-specific function based on the selected page
 if pg.title == "Bee Balanced":
     main_page.get_page()
+if pg.title == "Comments List":
+    comments_list_page.get_page()
 pg.run()

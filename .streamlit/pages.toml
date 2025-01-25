@@ -2,3 +2,8 @@
 path = 'src/pages/main_page.py'
 name = 'Bee Balanced'
 icon = ':bar_chart:'
+
+[[pages]]
+path = 'src/pages/comments_list_page.py'
+name = 'Comments List'
+icon = ':notebook:'

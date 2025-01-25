@@ -113,7 +113,7 @@ def get_page(df):
         )
         st.markdown(
             create_card(
-                "Land plots (PLOT+TRACT+REGION)",
+                "Land Claims <br> PLOT+TRACT+REGION",
                 f"{sps_balances['PLOT'].sum() + sps_balances['TRACT'].sum() + sps_balances['REGION'].sum()} #",
                 icons.land_icon_url_svg,
             ),

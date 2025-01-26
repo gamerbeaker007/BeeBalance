@@ -13,15 +13,9 @@ extra_columns = [
 def add_assets(row, placeholder):
     placeholder.text(f"Loading SPL Balances for account: {row['name']}")
 
-    # Specify tokens to filter
-
     player_details = spl.get_player_details(row["name"])
-
-    # Pivot the balances DataFrame
     if not player_details:
-        # Return the original row if no balances are found
         return row
-
     row['collection_power'] = player_details['collection_power']
 
     player_deeds = spl.get_deeds_collection(row['name'])
@@ -35,11 +29,9 @@ def add_assets(row, placeholder):
 def get_page(df):
     st.title('Splinterlands Assets')
 
-    # Create a dynamic placeholder for loading text
     loading_placeholder = st.empty()
 
     with st.spinner('Loading data... Please wait.'):
-        # Use a custom merge to ensure column order is preserved
         spl_assets = df.apply(lambda row: add_assets(row, loading_placeholder), axis=1)
 
     loading_placeholder.empty()

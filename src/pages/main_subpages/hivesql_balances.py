@@ -88,7 +88,8 @@ def get_page(account_names):
             st.write('As a reminder KE Ratio is not everything please read the following post: ')
             st.write('TODO add link')
         else:
-            st.title(':blue[KE Ratio]: N/A for multiple accounts')
+            st.title(':blue[KE Ratio]: N/A')
+            st.write('KE Ratio is not determined for multiple accounts')
             st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
 
     with st.expander("Hive balances data", expanded=False):

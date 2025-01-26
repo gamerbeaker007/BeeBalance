@@ -1,9 +1,7 @@
-import logging
-
 import pandas as pd
 import requests
-from requests.adapters import HTTPAdapter
 import streamlit as st
+from requests.adapters import HTTPAdapter
 
 from src.api.logRetry import LogRetry
 
@@ -28,9 +26,12 @@ def get_player_collection_df(username):
     address = base_url + 'cards/collection/' + username
     collection = http.get(address).json()['cards']
     df = pd.DataFrame(sorted(collection, key=lambda card: card['card_detail_id']))
-    details = get_card_details()
-    df.loc[:, 'card_name'] = df.apply(lambda row: details.loc[row['card_detail_id']]['name'], axis=1)
-    return df[['player', 'uid', 'card_detail_id', 'card_name', 'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']]
+    if not df.empty:
+        details = get_card_details()
+        df.loc[:, 'card_name'] = df.apply(lambda row: details.loc[row['card_detail_id']]['name'], axis=1)
+        return df[['player', 'uid', 'card_detail_id', 'card_name', 'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']]
+    else:
+        return pd.DataFrame()
 
 
 @st.cache_data(ttl="24h")
@@ -81,6 +82,7 @@ def get_balances(username, filter_tokens=None):
 def get_prices():
     address = prices_url + 'prices'
     return http.get(address).json()
+
 
 @st.cache_data(ttl="1h")
 def get_all_cards_for_sale_df():

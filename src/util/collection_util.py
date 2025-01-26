@@ -9,19 +9,21 @@ from src.api import spl
 
 log = logging.getLogger("Collection Util")
 
+
 def get_card_edition_value(account, list_prices_df, market_prices_df):
+    log.info(f'get card values for account: {account}')
     player_collection = spl.get_player_collection_df(account)
     return_df = pd.DataFrame({'date': datetime.today().strftime('%Y-%m-%d'),
                               'account_name': account}, index=[0])
-
-    for edition in Edition.__iter__():
-        log.debug(f'processing edition: {edition}')
-        temp_df = player_collection.loc[(player_collection.edition == edition.value)]
-        collection = get_collection(temp_df, list_prices_df, market_prices_df)
-        return_df[str(edition.name) + '_market_value'] = collection['market_value']
-        return_df[str(edition.name) + '_list_value'] = collection['list_value']
-        return_df[str(edition.name) + '_bcx'] = collection['bcx']
-        return_df[str(edition.name) + '_number_of_cards'] = collection['number_of_cards']
+    if not player_collection.empty:
+        for edition in Edition.__iter__():
+            log.debug(f'processing edition: {edition}')
+            temp_df = player_collection.loc[(player_collection.edition == edition.value)]
+            collection = get_collection(temp_df, list_prices_df, market_prices_df)
+            return_df[str(edition.name) + '_market_value'] = collection['market_value']
+            return_df[str(edition.name) + '_list_value'] = collection['list_value']
+            return_df[str(edition.name) + '_bcx'] = collection['bcx']
+            return_df[str(edition.name) + '_number_of_cards'] = collection['number_of_cards']
 
     return return_df
 

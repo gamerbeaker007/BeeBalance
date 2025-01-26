@@ -3,12 +3,11 @@ from datetime import datetime
 
 import streamlit as st
 
-from src.api import spl
-from src.pages.main_subpages import hivesql_balances, spl_balances_extra, spl_assets, spl_balances
-from src.util import spl_util
+from src.pages.main_subpages import hivesql_balances, spl_balances_estimates, spl_assets, spl_balances
 from src.util.card import card_style
 
 log = logging.getLogger("Main Page")
+
 
 def get_page():
     # Get the input from the user
@@ -27,24 +26,7 @@ def get_page():
 
         df = spl_balances.get_page(df)
         df = spl_assets.get_page(df)
-        if len(account_names) == 1:
-            spl_balances_extra.get_page(account_names[0])
 
-        # TODO combined data table with columns
-        #     HP
-        #     Rank
-        #     Account
-        #     Creation Date
-        #     Hive Power(HP)
-        #     Curation Rewards(HP)
-        #     Author Rewards(HP)
-        #     Total Rewards(HP)
-        #     Author + Curation
-        #     HP(Author + Curation) / HP
-        #     SPSP Balance
-        #     CP
-        #     DEC + DEC - B
-        #     Validator Nodes
-        #     Plots
+        df = spl_balances_estimates.get_page(df, 5)
     else:
         st.write('Enter valid hive account name')

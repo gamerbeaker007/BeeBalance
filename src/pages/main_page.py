@@ -30,13 +30,6 @@ def get_page():
         if len(account_names) == 1:
             spl_balances_extra.get_page(account_names[0])
 
-        for account in account_names:
-            if spl.player_exist(account):
-                spl_balances_ = spl_util.get_portfolio_value(account)
-            else:
-                st.warning('Invalid account name try again')
-
-
         # TODO combined data table with columns
         #     HP
         #     Rank

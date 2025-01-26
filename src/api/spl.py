@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
@@ -13,7 +15,8 @@ retry_strategy = LogRetry(
     total=10,
     status_forcelist=[429, 500, 502, 503, 504],
     backoff_factor=2,  # wait will be [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    allowed_methods=['HEAD', 'GET', 'OPTIONS']
+    allowed_methods=['HEAD', 'GET', 'OPTIONS'],
+    logger_name = "SPL Retry"
 )
 adapter = HTTPAdapter(max_retries=retry_strategy)
 http = requests.Session()

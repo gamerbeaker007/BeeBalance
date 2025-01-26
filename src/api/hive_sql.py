@@ -1,8 +1,10 @@
+import logging
 from functools import lru_cache
 import streamlit as st
 import pandas as pd
 import pypyodbc
 
+log = logging.getLogger("Hive SQL")
 # Access secrets
 db_username = st.secrets["database"]["username"]
 db_password = st.secrets["database"]["password"]
@@ -49,7 +51,7 @@ def executeQuery(query, params=None):
 
         return result
     except pypyodbc.Error as e:
-        print(f"Database error: {e}")
+        log.error(f"Database error: {e}")
         raise
     finally:
         if connection:
@@ -125,13 +127,15 @@ def get_hive_balances(account_names):
     return df
 
 
-def get_commentators(permlink):
+def get_commentators(permlinks):
+    placeholders = ', '.join(['?'] * len(permlinks))
+
     query = f"""
         SELECT DISTINCT author 
         FROM comments 
-        WHERE parent_permlink = '{permlink}'   
+        WHERE parent_permlink IN ({placeholders})   
         AND depth = 1
     """
-    authors = executeQuery(query)
+    authors = executeQuery(query, permlinks)
     authors = [row[0] for row in authors]
     return authors

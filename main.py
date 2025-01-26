@@ -1,4 +1,5 @@
 import importlib
+import logging
 import sys
 
 import streamlit as st
@@ -16,15 +17,22 @@ def reload_all():
 
 
 reload_all()
+
 st.set_page_config(page_title="Hive Bee Balanced", layout="wide")
 
 nav = get_nav_from_toml('.streamlit/pages.toml')
-
 pg = st.navigation(nav)
 
 add_page_title(pg)
 
 placeholder = st.empty()
+
+# Configure logging globally
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # Log format
+    datefmt="%Y-%m-%d %H:%M:%S",  # Date format
+)
 
 # Dynamically call the page-specific function based on the selected page
 if pg.title == "Bee Balanced":

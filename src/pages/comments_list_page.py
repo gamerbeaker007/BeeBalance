@@ -11,10 +11,11 @@ def get_page():
              '-strategies-sqkhvm')
     st.write('permlink: splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm')
 
-    permlink = st.text_input('copy/paste permlink here')
-    if permlink:
+    permlinks = st.text_input('copy/paste permlink here space separated for multiple')
+    permlinks = [name.strip() for name in permlinks.split(' ') if name.strip()]
+    if permlinks:
         with st.spinner('"Loading data... Please wait."'):
-            authors = hive_sql.get_commentators(permlink)
+            authors = hive_sql.get_commentators(permlinks)
             if authors:
                 authors_string = ' '.join(authors)
 
@@ -26,4 +27,4 @@ def get_page():
                 st.write('### Copy List to Clipboard:')
                 st.text_area('space separated authors:', authors_string, height=100)
             else:
-                st.write(f"### No authors found for '{permlink}'")
+                st.write(f"### No authors found for '{permlinks}'")

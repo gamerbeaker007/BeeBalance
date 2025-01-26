@@ -7,6 +7,7 @@ from src.static.static_values_enum import Edition
 
 from src.api import spl
 
+log = logging.getLogger("Collection Util")
 
 def get_card_edition_value(account, list_prices_df, market_prices_df):
     player_collection = spl.get_player_collection_df(account)
@@ -14,7 +15,7 @@ def get_card_edition_value(account, list_prices_df, market_prices_df):
                               'account_name': account}, index=[0])
 
     for edition in Edition.__iter__():
-        print(f'processing edition: {edition}')
+        log.debug(f'processing edition: {edition}')
         temp_df = player_collection.loc[(player_collection.edition == edition.value)]
         collection = get_collection(temp_df, list_prices_df, market_prices_df)
         return_df[str(edition.name) + '_market_value'] = collection['market_value']
@@ -59,7 +60,7 @@ def get_collection(df, list_prices_df, market_prices_df):
                 total_market_value += bcx * market_price
 
             if not list_price and not market_price:
-                logging.warning("Card '" +
+                log.warning("Card '" +
                                 str(collection_card['card_name']) +
                                 "' Not found on the markt (list/market) ignore for collection value")
 

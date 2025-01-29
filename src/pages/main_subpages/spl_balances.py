@@ -1,7 +1,7 @@
 import streamlit as st
 
 from src.api import spl
-from src.graphs import ke_hp_sps
+from src.graphs import graphs
 from src.static import icons
 from src.util.card import create_card
 
@@ -45,9 +45,7 @@ def add_token_balances(row, placeholder):
     return row_df.iloc[0]  # Return as a Series
 
 
-def get_page(df):
-    st.title('Splinterlands Balances')
-
+def prepare_date(df):
     # Create a dynamic placeholder for loading text
     loading_placeholder = st.empty()
 
@@ -63,10 +61,24 @@ def get_page(df):
 
     # Ensure original columns appear first
     sps_balances = sps_balances[list(df.columns) + token_columns]
+    return sps_balances
 
+
+def get_page(df):
+    st.title('Splinterlands Balances')
+
+    add_cards(df)
+
+    if df.name.index.size > 1:
+        graphs.add_ke_ratio_graph(df[['name', 'ke_ratio', 'hp', 'SPSP']])
+
+    with st.expander("Hive+SPL balances data", expanded=False):
+        st.dataframe(df, hide_index=True)
+
+
+def add_cards(sps_balances):
     # Display the cards in a row
     col1, col2, col3 = st.columns(3)
-
     with col1:
         st.markdown(
             create_card(
@@ -84,7 +96,6 @@ def get_page(df):
             ),
             unsafe_allow_html=True,
         )
-
     with col2:
         st.markdown(
             create_card(
@@ -119,11 +130,3 @@ def get_page(df):
             ),
             unsafe_allow_html=True,
         )
-
-    if df.name.index.size > 1:
-        ke_hp_sps.add_ke_ratio_graph(sps_balances[['name', 'ke_ratio', 'hp', 'SPSP']])
-
-    with st.expander("Hive+SPL balances data", expanded=False):
-        st.dataframe(sps_balances, hide_index=True)
-
-    return sps_balances

@@ -1,6 +1,10 @@
+import logging
+
 import streamlit as st
 
 from src.api import hive_sql
+
+log = logging.getLogger("Main Page")
 
 
 def get_page():
@@ -16,6 +20,8 @@ def get_page():
 
     permlinks = [name.strip() for name in permlinks.split(' ') if name.strip()]
     if permlinks:
+        log.info(f'Analysing commentators: {permlinks}')
+
         with st.spinner('"Loading data... Please wait."'):
             authors = hive_sql.get_commentators(permlinks)
             if authors:

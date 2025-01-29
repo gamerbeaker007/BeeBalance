@@ -5,7 +5,8 @@ import sys
 import streamlit as st
 from st_pages import get_nav_from_toml, add_page_title
 
-from src.pages import main_page, comments_list_page
+from src.pages import main_page, comments_list_page, top_holders_page
+from src.util import authentication
 
 
 def reload_all():
@@ -34,6 +35,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",  # Date format
 )
 
+# Set up session state to remember authentication
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
 # Dynamically call the page-specific function based on the selected page
 if pg.title == "Bee Balanced":
     with placeholder.container():
@@ -41,3 +46,7 @@ if pg.title == "Bee Balanced":
 if pg.title == "Comments List":
     with placeholder.container():
         comments_list_page.get_page()
+if pg.title == "Top Holders":
+    with placeholder.container():
+        authentication.get_page()
+        top_holders_page.get_page()

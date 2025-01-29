@@ -21,7 +21,7 @@ connection_string = (
 )
 
 
-def executeQuery(query, params=None):
+def execute_query(query, params=None):
     """
     Executes a SQL query with optional parameters.
 
@@ -61,7 +61,7 @@ def executeQuery(query, params=None):
 
 @lru_cache(maxsize=1)
 def get_hive_per_mvest():
-    result = executeQuery("SELECT total_vesting_fund_hive, total_vesting_shares  FROM DynamicGlobalProperties")
+    result = execute_query("SELECT total_vesting_fund_hive, total_vesting_shares  FROM DynamicGlobalProperties")
     if result:  # Ensure result is not empty
         # Unpack the first row of the result
         total_vesting_fund_hive, total_vesting_shares = result[0]
@@ -109,7 +109,7 @@ def get_hive_balances(account_names):
         WHERE name IN ({placeholders})
         """
 
-        batch_result = executeQuery(query, batch)
+        batch_result = execute_query(query, batch)
         if batch_result:
             all_results.extend(batch_result)
 
@@ -136,6 +136,49 @@ def get_commentators(permlinks):
         WHERE parent_permlink IN ({placeholders})   
         AND depth = 1
     """
-    authors = executeQuery(query, permlinks)
+    authors = execute_query(query, permlinks)
     authors = [row[0] for row in authors]
     return authors
+
+
+def get_top_posting_rewards(number, minimal_posting_rewards):
+    query = f"""
+        SELECT TOP 100 name, posting_rewards 
+        FROM accounts 
+        WHERE posting_rewards > 10000
+        ORDER BY posting_rewards DESC
+    """
+    result = execute_query(query)
+
+    columns = [
+        "name", "author rewards"
+    ]
+    return pd.DataFrame.from_records(result, columns=columns)
+
+
+def get_active_hivers(posting_rewards, comments, months):
+    query = f"""
+            SELECT 
+                a.name,
+                a.posting_rewards,
+                COUNT(c.permlink) AS comment_count
+            FROM 
+                Accounts a
+            JOIN 
+                Comments c
+            ON 
+                a.name = c.author
+            WHERE 
+                a.posting_rewards > {posting_rewards}
+                AND c.created >= DATEADD(MONTH, -{months}, GETDATE())
+            GROUP BY 
+                a.name, a.posting_rewards
+            HAVING 
+                COUNT(c.permlink) > {comments};
+    """
+    result = execute_query(query)
+    columns = [
+        "name", "author rewards", f"comment past {months} months"
+    ]
+
+    return pd.DataFrame.from_records(result, columns=columns)

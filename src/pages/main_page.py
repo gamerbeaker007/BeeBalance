@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 
 import streamlit as st
@@ -12,21 +13,33 @@ log = logging.getLogger("Main Page")
 def get_page():
     # Get the input from the user
     account_names = st.text_input('Enter account names (space separated)')
-    log.info(f'Analysing account: {account_names}')
+    valid_pattern = re.compile(r'^[a-zA-Z0-9\- ]+$')
+    valid = valid_pattern.match(account_names)
 
-    # Split the input into a list of account names
-    account_names = [name.strip() for name in account_names.split(' ') if name.strip()]
-    if account_names:
-        st.markdown(card_style, unsafe_allow_html=True)
-        df = hivesql_balances.get_page(account_names)
+    if not valid:
+        st.warning(f'Invalid input character. Should match [a-zA-Z0-9\\- ]')
 
-        # Add date column
-        current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        df.insert(0, 'date', current_datetime)
+    if valid:
+        # Split the input into a list of account names
+        account_names = [name.strip() for name in account_names.split(' ') if name.strip()]
+        if account_names:
+            log.info(f'Analysing account: {account_names}')
+            st.markdown(card_style, unsafe_allow_html=True)
+            df = hivesql_balances.prepare_data(account_names)
+            hivesql_balances.get_page(df)
 
-        df = spl_balances.get_page(df)
-        df = spl_assets.get_page(df)
+            # Add date column
+            current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            df.insert(0, 'date', current_datetime)
 
-        df = spl_balances_estimates.get_page(df, 5)
-    else:
-        st.write('Enter valid hive account name')
+            df = spl_balances.prepare_date(df)
+            spl_balances.get_page(df)
+
+            df = spl_assets.prepare_data(df)
+            spl_assets.get_page(df)
+
+            max_number_of_accounts = 5
+            df = spl_balances_estimates.prepare_data(df, max_number_of_accounts)
+            spl_balances_estimates.get_page(df, max_number_of_accounts)
+        else:
+            st.write('Enter valid hive account name')

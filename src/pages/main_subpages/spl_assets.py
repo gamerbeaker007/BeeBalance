@@ -26,9 +26,7 @@ def add_assets(row, placeholder):
     return row
 
 
-def get_page(df):
-    st.title('Splinterlands Assets')
-
+def prepare_data(df):
     loading_placeholder = st.empty()
 
     with st.spinner('Loading data... Please wait.'):
@@ -42,9 +40,20 @@ def get_page(df):
 
     # Ensure original columns appear first
     spl_assets = spl_assets[list(df.columns) + extra_columns]
+    return spl_assets
 
+
+def get_page(df):
+    st.title('Splinterlands Assets')
+
+    add_cards(df)
+
+    with st.expander("Hive+SPL balances + SPL Assets data", expanded=False):
+        st.dataframe(df, hide_index=True)
+
+
+def add_cards(spl_assets):
     col1, col2 = st.columns(2)
-
     with col1:
         st.markdown(
             create_card(
@@ -54,7 +63,6 @@ def get_page(df):
             ),
             unsafe_allow_html=True,
         )
-
     with col2:
         st.markdown(
             create_card(
@@ -64,8 +72,3 @@ def get_page(df):
             ),
             unsafe_allow_html=True,
         )
-
-    with st.expander("Hive+SPL balances + SPL Assets data", expanded=False):
-        st.dataframe(spl_assets, hide_index=True)
-
-    return spl_assets

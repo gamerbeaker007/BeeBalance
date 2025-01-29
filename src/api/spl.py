@@ -170,3 +170,12 @@ def get_player_details(account_name):
         return result.json()
     else:
         return None
+
+
+def get_spsp_richlist():
+    address = base_url + 'players/richlist?token_type=SPSP'
+    result = http.get(address)
+    if result.status_code == 200 and 'error' not in result.json():
+        return pd.DataFrame(result.json()['richlist'])
+    else:
+        return None

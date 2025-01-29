@@ -81,7 +81,7 @@ def get_page():
                 # st.dataframe(active_authors, hide_index=True)
 
                 st.warning('TODO scaled down to 200 for now')
-                account_list = active_authors.head(10).name.to_list()
+                account_list = active_authors.head(200).name.to_list()
                 create_page(account_list)
 
         elif button_clicked == 'top authors':

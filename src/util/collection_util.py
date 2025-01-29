@@ -62,9 +62,10 @@ def get_collection(df, list_prices_df, market_prices_df):
                 total_market_value += bcx * market_price
 
             if not list_price and not market_price:
+                details = spl.get_card_details()
                 log.warning("Card '" +
-                                str(collection_card['card_name']) +
-                                "' Not found on the markt (list/market) ignore for collection value")
+                            str(details.loc[collection_card['card_detail_id']]['name']) +
+                            "' Not found on the markt (list/market) ignore for collection value")
 
     return {'list_value': total_list_value,
             'market_value': total_market_value,
@@ -97,29 +98,3 @@ def find_card(collection_card, market_df):
            & (market_df.edition == collection_card['edition'])
     filtered_df = market_df.loc[mask]
     return filtered_df
-
-
-def get_bcx(collection_card):
-    settings = spl.get_settings()
-    card_details = spl.get_card_details()
-    # rarity = self.card_details[int(collection_card["card_detail_id"]) - 1]["rarity"]
-    rarity = card_details.loc[collection_card['card_detail_id']].rarity
-    edition = int(collection_card["edition"])
-    xp = int(collection_card["xp"])
-
-    if edition == 0:
-        if collection_card["gold"]:
-            bcx = xp / settings["gold_xp"][rarity - 1]
-        else:
-            bcx = xp / settings["alpha_xp"][rarity - 1] + 1
-    elif edition == 2 and int(collection_card["card_detail_id"]) > 223:  # all promo cards alpha/beta
-        bcx = xp
-    elif (edition < 3) or ((edition == 3) and (int(collection_card["card_detail_id"]) <= 223)):
-        if collection_card["gold"]:
-            bcx = xp / settings["beta_gold_xp"][rarity - 1]
-        else:
-            bcx = xp / settings["beta_xp"][rarity - 1] + 1
-    else:
-        bcx = xp
-
-    return bcx

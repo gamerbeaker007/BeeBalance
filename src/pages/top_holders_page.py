@@ -77,10 +77,12 @@ def get_page():
                          f'with params '
                          f'total posting_reward >{posting_reward}, '
                          f'comments >{comments}, months -{months}')
+                active_authors = active_authors.sort_values(by="author rewards", ascending=False)
+
                 st.dataframe(active_authors, hide_index=True)
 
-                st.warning('TODO scaled down to 10 for now')
-                account_list = active_authors.head(10).name.to_list()
+                st.warning('TODO scaled down to 1000 for now')
+                account_list = active_authors.head(1000).name.to_list()
                 create_page(account_list)
 
         elif button_clicked == 'top authors':
@@ -90,12 +92,14 @@ def get_page():
 
         elif button_clicked == 'top spsp':
             rich_list = spl.get_spsp_richlist()
-            rich_list = rich_list.sort_values(by="balance", ascending=False)
-            account_list = rich_list.player.head(100).to_list()
-            create_page(account_list)
+            if not rich_list.empty:
+                rich_list = rich_list.sort_values(by="balance", ascending=False)
+                account_list = rich_list.player.head(100).to_list()
+                create_page(account_list)
 
         elif button_clicked == 'top 200 spsp':
             rich_list = spl.get_spsp_richlist()
-            rich_list = rich_list.sort_values(by="balance", ascending=False)
-            account_list = rich_list.player.to_list()
-            create_page(account_list)
+            if not rich_list.empty:
+                rich_list = rich_list.sort_values(by="balance", ascending=False)
+                account_list = rich_list.player.to_list()
+                create_page(account_list)

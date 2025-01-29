@@ -13,7 +13,7 @@ log = logging.getLogger('SPL Estimates')
 def add_estimations(row, list_prices_df, market_prices_df, placeholder):
     account_name = row['name']
     if not spl.player_exist(account_name):
-        logging.info(f'Not a splinterlands account skip {account_name}')
+        log.info(f'Not a splinterlands account skip {account_name}')
         return row
 
     estimates = spl_util.get_portfolio_value(account_name, list_prices_df, market_prices_df, placeholder)

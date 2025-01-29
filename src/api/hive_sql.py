@@ -2,9 +2,9 @@ import logging
 from functools import lru_cache
 
 import numpy as np
-import streamlit as st
 import pandas as pd
 import pypyodbc
+import streamlit as st
 
 log = logging.getLogger("Hive SQL")
 # Access secrets
@@ -60,7 +60,6 @@ def execute_query(query, params=None):
             connection.close()
 
 
-
 @lru_cache(maxsize=1)
 def get_hive_per_mvest():
     result = execute_query("SELECT total_vesting_fund_hive, total_vesting_shares  FROM DynamicGlobalProperties")
@@ -73,10 +72,6 @@ def get_hive_per_mvest():
         return 0
 
 
-def vest_to_hp(hive_per_mvest, vesting_shares):
-    return vesting_shares / 1e6 * hive_per_mvest
-
-
 def batch_list(lst, batch_size):
     for i in range(0, len(lst), batch_size):
         yield lst[i:i + batch_size]
@@ -86,7 +81,7 @@ def get_hive_balances(account_names):
     if not isinstance(account_names, list):
         raise ValueError("account_names must be a list")
 
-    hive_per_mvest = get_hive_per_mvest()  # Cacheable
+    hive_per_mvest = get_hive_per_mvest()
     all_results = []
 
     # Process account names in batches
@@ -120,15 +115,21 @@ def get_hive_balances(account_names):
     # Define DataFrame columns
     columns = [
         "name", "created", "hive", "hive_savings", "hbd", "hbd_savings",
-        "reputation", "vesting_shares", "delegated_vesting_shares", "received_vesting_shares", "curation_rewards", "author_rewards"
+        "reputation", "vesting_shares", "delegated_vesting_shares", "received_vesting_shares", "curation_rewards",
+        "author_rewards"
     ]
 
     df = pd.DataFrame.from_records(all_results, columns=columns)
-    df["reputation"] = ((np.log10(df["reputation"]) - 9) * 9) + 25
+    df["reputation"] = np.where(
+        df["reputation"] > 0,  # Only apply log10() to positive values
+        ((np.log10(df["reputation"].clip(lower=1e-9)) - 9) * 9) + 25,
+        0.0  # Assign 0.0 when reputation is 0 or negative
+    )
 
-    df["hp"] = (hive_per_mvest / 1e6) * df["vesting_shares"]
-    df["hp delegated"] = (hive_per_mvest / 1e6) * df["delegated_vesting_shares"]
-    df["hp received"] = (hive_per_mvest / 1e6) * df["received_vesting_shares"]
+    conversion_factor = hive_per_mvest / 1e6
+    df["hp"] = conversion_factor * df["vesting_shares"]
+    df["hp delegated"] = conversion_factor * df["delegated_vesting_shares"]
+    df["hp received"] = conversion_factor * df["received_vesting_shares"]
     df["ke_ratio"] = (df["curation_rewards"] + df["author_rewards"]) / df["hp"]
 
     return df

@@ -11,18 +11,32 @@ extra_columns = [
 
 
 def add_assets(row, placeholder):
+    """
+    Add assets (collection power and deeds) to a player's row.
+
+    :param row: A row from a DataFrame.
+    :param placeholder: Streamlit placeholder to display status messages.
+    :return: A modified row with added asset values.
+    """
     placeholder.text(f"Loading SPL Balances for account: {row['name']}")
 
-    player_details = spl.get_player_details(row["name"])
-    if not player_details:
-        return row
-    row['collection_power'] = player_details['collection_power']
+    # Ensure we modify a copy of row
+    row = row.copy()
 
-    player_deeds = spl.get_deeds_collection(row['name'])
-    if not player_deeds:
-        return row
+    # Fetch player card collection and calculate collection power
+    player_card_collection = spl.get_player_collection_df(row["name"])
+    if not player_card_collection.empty:
+        row["collection_power"] = player_card_collection["collection_power"].sum()
+    else:
+        row["collection_power"] = 0  # Default value if empty
 
-    row['deeds'] = len(player_deeds)
+    # Fetch player deeds collection and count
+    player_deeds = spl.get_deeds_collection(row["name"])
+    if not player_deeds.empty:
+        row["deeds"] = len(player_deeds)
+    else:
+        row["deeds"] = 0  # Default value if empty
+
     return row
 
 
@@ -34,12 +48,6 @@ def prepare_data(df):
 
     loading_placeholder.empty()
 
-    for col in extra_columns:
-        if col not in spl_assets.columns:
-            spl_assets[col] = 0
-
-    # Ensure original columns appear first
-    spl_assets = spl_assets[list(df.columns) + extra_columns]
     return spl_assets
 
 

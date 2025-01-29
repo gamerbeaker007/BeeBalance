@@ -42,7 +42,9 @@ def get_page():
     results_container = st.container()
 
     account_limit = 100
-    posting_reward = 10000
+    posting_reward = 500
+    comments = 10
+    months = 6
     with col1:
         if st.button(f'TOP {account_limit} HP holders with author rewards >{posting_reward}'):
             # Store parameters for use in the results container
@@ -70,18 +72,15 @@ def get_page():
 
         if button_clicked == 'top active authors':
             if st.session_state.authenticated:
-                posting_reward = 500
-                comments = 10
-                months = 6
                 active_authors = hive_sql.get_active_hivers(posting_reward, comments, months)
                 st.write(f'account found: {active_authors.index.size}, '
                          f'with params '
                          f'total posting_reward >{posting_reward}, '
                          f'comments >{comments}, months -{months}')
-                # st.dataframe(active_authors, hide_index=True)
+                st.dataframe(active_authors, hide_index=True)
 
-                st.warning('TODO scaled down to 200 for now')
-                account_list = active_authors.head(200).name.to_list()
+                st.warning('TODO scaled down to 10 for now')
+                account_list = active_authors.head(10).name.to_list()
                 create_page(account_list)
 
         elif button_clicked == 'top authors':

@@ -1,5 +1,7 @@
 import logging
 from functools import lru_cache
+
+import numpy as np
 import streamlit as st
 import pandas as pd
 import pypyodbc
@@ -103,6 +105,8 @@ def get_hive_balances(account_names):
             CAST(savings_hbd_balance AS FLOAT) AS hbd_savings,
             CAST(reputation AS FLOAT) AS reputation,
             CAST(vesting_shares AS FLOAT) AS vesting_shares,
+            CAST(delegated_vesting_shares AS FLOAT) AS delegated_vesting_shares,
+            CAST(received_vesting_shares AS FLOAT) AS received_vesting_shares,
             CAST(curation_rewards AS FLOAT) / 1000.0 AS curation,
             CAST(posting_rewards AS FLOAT) / 1000.0 AS posting
         FROM accounts
@@ -116,12 +120,15 @@ def get_hive_balances(account_names):
     # Define DataFrame columns
     columns = [
         "name", "created", "hive", "hive_savings", "hbd", "hbd_savings",
-        "reputation", "vesting_shares", "curation_rewards", "author_rewards"
+        "reputation", "vesting_shares", "delegated_vesting_shares", "received_vesting_shares", "curation_rewards", "author_rewards"
     ]
 
     df = pd.DataFrame.from_records(all_results, columns=columns)
+    df["reputation"] = ((np.log10(df["reputation"]) - 9) * 9) + 25
 
     df["hp"] = (hive_per_mvest / 1e6) * df["vesting_shares"]
+    df["hp delegated"] = (hive_per_mvest / 1e6) * df["delegated_vesting_shares"]
+    df["hp received"] = (hive_per_mvest / 1e6) * df["received_vesting_shares"]
     df["ke_ratio"] = (df["curation_rewards"] + df["author_rewards"]) / df["hp"]
 
     return df

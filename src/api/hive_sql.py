@@ -116,7 +116,7 @@ def get_hive_balances(account_names):
     columns = [
         "name", "created", "hive", "hive_savings", "hbd", "hbd_savings",
         "reputation", "vesting_shares", "delegated_vesting_shares", "received_vesting_shares", "curation_rewards",
-        "author_rewards"
+        "posting_rewards"
     ]
 
     df = pd.DataFrame.from_records(all_results, columns=columns)
@@ -130,7 +130,7 @@ def get_hive_balances(account_names):
     df["hp"] = conversion_factor * df["vesting_shares"]
     df["hp delegated"] = conversion_factor * df["delegated_vesting_shares"]
     df["hp received"] = conversion_factor * df["received_vesting_shares"]
-    df["ke_ratio"] = (df["curation_rewards"] + df["author_rewards"]) / df["hp"]
+    df["ke_ratio"] = (df["curation_rewards"] + df["posting_rewards"]) / df["hp"]
 
     return df
 

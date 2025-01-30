@@ -49,7 +49,7 @@ def add_cards(result):
     hbd_balance = round(result['hbd'].sum() + result['hbd_savings'].sum(), 2)
     hp_balance = round(result['hp'].sum(), 2)
     curation_rewards = round(result['curation_rewards'].sum(), 2)
-    author_rewards = round(result['author_rewards'].sum(), 2)
+    posting_rewards = round(result['posting_rewards'].sum(), 2)
 
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
@@ -83,7 +83,7 @@ def add_cards(result):
         st.markdown(
             create_card(
                 "Author rewards",
-                f"{author_rewards} HIVE",
+                f"{posting_rewards} HIVE",
                 icons.credits_icon_url,
             ),
             unsafe_allow_html=True,

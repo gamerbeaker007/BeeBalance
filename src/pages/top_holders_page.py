@@ -1,105 +1,115 @@
 import logging
 from datetime import datetime
 
-import pandas as pd
 import streamlit as st
 
 from src.api import hive_sql, spl
 from src.graphs import graphs
 from src.pages.main_subpages import hivesql_balances, spl_balances
 
-log = logging.getLogger('Top Holders')
+log = logging.getLogger("Top Holders")
 
 
 def analyse_accounts(accounts):
     df = hivesql_balances.prepare_data(accounts)
 
     # Add date column
-    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    df.insert(0, 'date', current_datetime)
+    df.insert(0, "date", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     df = spl_balances.prepare_date(df)
-    # df = spl_assets.prepare_data(df)
-
     return df
 
 
 def create_page(account_list):
+    """Generate the results page with graphs and a table."""
     result = analyse_accounts(account_list)
 
-    # Display results if available
     if not result.empty:
         graphs.add_ke_ratio_graph(result)
+        graphs.add_ke_hp_graph(result)
         graphs.add_spsp_vs_hp_graph(result)
+        graphs.add_spsp_graph(result)
         st.dataframe(result, hide_index=True)
 
 
-def get_page():
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 4])
-    result = pd.DataFrame()
+def fetch_rich_list_spsp(top_n=None):
+    """Fetch SPSP rich list and optionally return only the top N."""
+    rich_list = spl.get_spsp_richlist()
+    if rich_list.empty:
+        return []
+    sorted_list = rich_list.sort_values(by="balance", ascending=False)
+    return sorted_list.head(top_n).player.tolist() if top_n else sorted_list.player.to_list()
 
-    # Create a container for execution results
-    results_container = st.container()
+
+def handle_top_active_authors(posting_reward, comments, months):
+    """Fetch and display the top active authors."""
+    active_authors = hive_sql.get_active_hivers(posting_reward, comments, months)
+
+    if active_authors.empty:
+        st.warning("No active authors found.")
+        return
+
+    st.write(
+        f"Accounts found: {active_authors.index.size}, with params "
+        f"total posting_reward >{posting_reward}, comments >{comments}, months -{months}"
+    )
+
+    active_authors = active_authors.sort_values(by="author rewards", ascending=False)
+    st.dataframe(active_authors, hide_index=True)
+
+    st.warning("TODO: Scaled down to 1000 for now")
+    create_page(active_authors.head(1000).name.to_list())
+
+
+def get_page():
+    """Main Streamlit page layout and interaction."""
+    col1, col2, col3, col4, _ = st.columns([1, 1, 1, 1, 4])
+
+    # Ensure session state key exists
+    if "button_clicked" not in st.session_state:
+        st.session_state.button_clicked = None
 
     account_limit = 100
     posting_reward = 500
     comments = 10
     months = 6
+
     with col1:
-        if st.button(f'TOP {account_limit} HP holders with author rewards >{posting_reward}'):
-            # Store parameters for use in the results container
-            st.session_state.button_clicked = 'top authors'
+        if st.button(f"TOP {account_limit} HP holders with author rewards >{posting_reward}"):
+            st.session_state.button_clicked = "top authors"
+
     with col2:
-        if st.button(f'TOP 100 Staked SPS Holders'):
-            # Store parameters for use in the results container
-            st.session_state.button_clicked = 'rich list spsp 100'
+        if st.button("TOP 100 Staked SPS Holders"):
+            st.session_state.button_clicked = "rich list spsp 100"
+
     with col3:
-        if st.session_state.authenticated:
-            if st.button('Top active authors'):
-                # Store parameters for use in the results container
-                st.session_state.button_clicked = 'top active authors'
+        if st.session_state.get("authenticated"):
+            if st.button("Top active authors"):
+                st.session_state.button_clicked = "top active authors"
+
     with col4:
-        if st.session_state.authenticated:
-            if st.button(f'Rich list SPSP holders'):
-                # Store parameters for use in the results container
-                st.session_state.button_clicked = 'rich list spsp'
+        if st.session_state.get("authenticated"):
+            if st.button("Rich list SPSP holders"):
+                st.session_state.button_clicked = "rich list spsp"
 
-    # Handle execution based on which button was clicked
-    with results_container:
-        button_clicked = st.session_state.get('button_clicked')
-        if button_clicked:
-            log.info(f'Analysing top holders: {button_clicked}')
+    # Execute actions based on button clicks
+    button_clicked = st.session_state.get("button_clicked")
+    if not button_clicked:
+        return
 
-        if button_clicked == 'top active authors':
-            if st.session_state.authenticated:
-                active_authors = hive_sql.get_active_hivers(posting_reward, comments, months)
-                st.write(f'account found: {active_authors.index.size}, '
-                         f'with params '
-                         f'total posting_reward >{posting_reward}, '
-                         f'comments >{comments}, months -{months}')
-                active_authors = active_authors.sort_values(by="author rewards", ascending=False)
+    log.info(f"Analysing top holders: {button_clicked}")
 
-                st.dataframe(active_authors, hide_index=True)
+    with st.spinner("Fetching data..."):
+        if button_clicked == "top active authors":
+            if st.session_state.get("authenticated"):
+                handle_top_active_authors(posting_reward, comments, months)
 
-                st.warning('TODO scaled down to 1000 for now')
-                account_list = active_authors.head(1000).name.to_list()
-                create_page(account_list)
-
-        elif button_clicked == 'top authors':
+        elif button_clicked == "top authors":
             top_authors = hive_sql.get_top_posting_rewards(account_limit, posting_reward)
-            account_list = top_authors.name.to_list()
-            create_page(account_list)
+            create_page(top_authors.name.to_list())
 
-        elif button_clicked == 'rich list spsp 100':
-            rich_list = spl.get_spsp_richlist()
-            if not rich_list.empty:
-                rich_list = rich_list.sort_values(by="balance", ascending=False)
-                account_list = rich_list.player.head(100).to_list()
-                create_page(account_list)
+        elif button_clicked == "rich list spsp 100":
+            create_page(fetch_rich_list_spsp(top_n=100))
 
-        elif button_clicked == 'rich list spsp':
-            rich_list = spl.get_spsp_richlist()
-            if not rich_list.empty:
-                rich_list = rich_list.sort_values(by="balance", ascending=False)
-                account_list = rich_list.player.to_list()
-                create_page(account_list)
+        elif button_clicked == "rich list spsp":
+            create_page(fetch_rich_list_spsp())

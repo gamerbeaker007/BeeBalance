@@ -56,7 +56,7 @@ def get_page(df):
 
     add_cards(df)
 
-    with st.expander("Hive+SPL balances + SPL Assets data", expanded=False):
+    with st.expander("Hive + SPL data", expanded=False):
         st.dataframe(df, hide_index=True)
 
 

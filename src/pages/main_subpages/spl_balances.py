@@ -72,9 +72,6 @@ def get_page(df):
     if df.name.index.size > 1:
         graphs.add_ke_ratio_graph(df[['name', 'ke_ratio', 'hp', 'SPSP']])
 
-    with st.expander("Hive+SPL balances data", expanded=False):
-        st.dataframe(df, hide_index=True)
-
 
 def add_cards(sps_balances):
     # Display the cards in a row

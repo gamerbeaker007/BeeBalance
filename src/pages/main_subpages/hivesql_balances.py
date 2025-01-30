@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.api import hive_sql
+from src.pages.main_subpages import ke_ratio_links
 from src.static import icons
 from src.util.card import create_card
 
@@ -34,15 +35,13 @@ def get_page(df):
         if df.index.size == 1:
             st.title(':blue[KE Ratio]: ' + str(round(ke_ratio, 2)) + ' ' + determine_emoji(ke_ratio))
             st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
-            st.write('As a reminder KE Ratio is not everything please read the following post: ')
-            st.write('TODO add link')
+            with st.expander("More info behind KE Ratio"):
+                ke_ratio_links.get_page()
+
         else:
             st.title(':blue[KE Ratio]: N/A')
             st.write('KE Ratio is not determined for multiple accounts')
             st.write('KE Ratio = (Author Rewards + Curation Rewards) / HP')
-
-    with st.expander("Hive balances data", expanded=False):
-        st.dataframe(df, hide_index=True)
 
 
 def add_cards(result):
@@ -51,7 +50,7 @@ def add_cards(result):
     hp_balance = round(result['hp'].sum(), 2)
     curation_rewards = round(result['curation_rewards'].sum(), 2)
     author_rewards = round(result['author_rewards'].sum(), 2)
-    # Display the cards in a row
+
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.markdown(

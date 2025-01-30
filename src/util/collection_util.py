@@ -10,49 +10,63 @@ from src.api import spl
 log = logging.getLogger("Collection Util")
 
 
+def group_bcx(df):
+    """
+    Retrieve dataframe with grouped bxc or unbounded this reduces the time to indentify values
+    e.g.:
+    10 Baakjiras of 1 bcx  become 1 row with a count of 10
+    if you have another Baakjira that is 11 bcx that will be other row with count 1 becuase that will reflect in a different price
+
+    :param df: dataframe with card colletion of a player
+    :return: dataframe with grouped bxc or bcx_unbound with a count
+    """
+    return df.groupby(['player', 'card_detail_id', 'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']).size().reset_index(name='count')
+
+
+
 def get_card_edition_value(account, list_prices_df, market_prices_df):
     log.info(f'get card values for account: {account}')
     player_collection = spl.get_player_collection_df(account)
+
+    # Remove not fully unbouned form the list, because you cannot sell then they have no value for now!
+    sellable_cards_df = player_collection[player_collection.apply(is_card_sellable, axis=1)].reset_index(drop=True)
+    # Group all bxc and unbounded
+    sellable_cards_df = group_bcx(sellable_cards_df)
+
     return_df = pd.DataFrame({'date': datetime.today().strftime('%Y-%m-%d'),
                               'account_name': account}, index=[0])
     if not player_collection.empty:
         for edition in Edition.__iter__():
             log.debug(f'processing edition: {edition}')
-            temp_df = player_collection.loc[(player_collection.edition == edition.value)]
-            collection = get_collection(temp_df, list_prices_df, market_prices_df)
+            temp_df = sellable_cards_df.loc[(sellable_cards_df.edition == edition.value)]
+            collection = get_collection_value(temp_df, list_prices_df, market_prices_df)
             return_df[str(edition.name) + '_market_value'] = collection['market_value']
             return_df[str(edition.name) + '_list_value'] = collection['list_value']
-            return_df[str(edition.name) + '_bcx'] = collection['bcx']
-            return_df[str(edition.name) + '_number_of_cards'] = collection['number_of_cards']
+            return_df[str(edition.name) + '_bcx'] = player_collection[player_collection.edition == edition.value].bcx.sum()
+            return_df[str(edition.name) + '_number_of_cards'] = player_collection[player_collection.edition == edition.value].index.size
 
     return return_df
 
 
-def is_fully_unbound(collection_card):
-    return collection_card.bcx == collection_card.bcx_unbound
+def is_card_sellable(collection_card):
+    if collection_card.edition == Edition.gladius.value:
+        return False  # Gladius cards are never be sellable
+    elif collection_card.edition in [Edition.soulbound.value, Edition.soulboundrb.value]:
+        return collection_card.bcx == collection_card.bcx_unbound  # Sellable when its fully unbounded
+    else:
+        return True  # All other editions are always sellable
 
 
-def get_collection(df, list_prices_df, market_prices_df):
+
+def get_collection_value(df, list_prices_df, market_prices_df, new=False):
     total_list_value = 0
     total_market_value = 0
-    total_bcx = 0
-    number_of_cards = 0
 
     for index, collection_card in df.iterrows():
-        number_of_cards += 1
-        bcx = collection_card.bcx
-        total_bcx += bcx
+        bcx = collection_card.bcx * collection_card['count']
 
-        if (collection_card['edition'] == Edition.soulbound.value or
-                collection_card['edition'] == Edition.soulboundrb.value):
-            # determine total unbound bcx to calculate value.
-            # only fully unbound soulbound units will be used for value calculations
-            if not is_fully_unbound(collection_card):
-                bcx = 0
 
-        if collection_card['edition'] == Edition.gladius.value:
-            pass  # Has no value, not relevant for now
-        else:
+        if is_card_sellable(collection_card):
             list_price = get_list_price(collection_card, list_prices_df)
             if list_price:
                 total_list_value += bcx * list_price
@@ -67,11 +81,10 @@ def get_collection(df, list_prices_df, market_prices_df):
                             str(details.loc[collection_card['card_detail_id']]['name']) +
                             "' Not found on the markt (list/market) ignore for collection value")
 
-    return {'list_value': total_list_value,
-            'market_value': total_market_value,
-            'bcx': total_bcx,
-            'number_of_cards': number_of_cards
-            }
+    return {
+        'list_value': total_list_value,
+        'market_value': total_market_value,
+    }
 
 
 def get_list_price(collection_card, list_prices_df):

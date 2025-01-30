@@ -151,15 +151,15 @@ def get_commentators(permlinks):
 
 def get_top_posting_rewards(number, minimal_posting_rewards):
     query = f"""
-        SELECT TOP 100 name, posting_rewards 
+        SELECT TOP {number} name, posting_rewards 
         FROM accounts 
-        WHERE posting_rewards > 10000
+        WHERE posting_rewards > {minimal_posting_rewards}
         ORDER BY posting_rewards DESC
     """
     result = execute_query(query)
 
     columns = [
-        "name", "author rewards"
+        "name", "posting_rewards"
     ]
     return pd.DataFrame.from_records(result, columns=columns)
 
@@ -186,7 +186,7 @@ def get_active_hivers(posting_rewards, comments, months):
     """
     result = execute_query(query)
     columns = [
-        "name", "author rewards", f"comment past {months} months"
+        "name", "posting_rewards", f"comment past {months} months"
     ]
 
     return pd.DataFrame.from_records(result, columns=columns)

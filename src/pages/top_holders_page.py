@@ -54,7 +54,7 @@ def handle_top_active_authors(posting_reward, comments, months):
         f"total posting_reward >{posting_reward}, comments >{comments}, months -{months}"
     )
 
-    active_authors = active_authors.sort_values(by="author rewards", ascending=False)
+    active_authors = active_authors.sort_values(by="posting_rewards", ascending=False)
     st.dataframe(active_authors, hide_index=True)
 
     st.warning("TODO: Scaled down to 1000 for now")
@@ -75,7 +75,7 @@ def get_page():
     months = 6
 
     with col1:
-        if st.button(f"TOP {account_limit} HP holders with author rewards >{posting_reward}"):
+        if st.button(f"TOP {account_limit} HP holders with posting rewards >{posting_reward}"):
             st.session_state.button_clicked = "top authors"
 
     with col2:

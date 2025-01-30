@@ -113,7 +113,7 @@ def get_land_card(df):
 
     # Create the card
     return create_card(
-        'Land Claims / Deeds / Totem Claims',
+        'Land + Totem Claims',
         f'{round(float(land_value), 2)} $',
         icons.land_icon_url_svg,
     )

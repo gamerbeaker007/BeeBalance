@@ -52,7 +52,7 @@ def get_page():
     with col2:
         if st.button(f'TOP 100 Staked SPS Holders'):
             # Store parameters for use in the results container
-            st.session_state.button_clicked = 'top spsp'
+            st.session_state.button_clicked = 'rich list spsp 100'
     with col3:
         if st.session_state.authenticated:
             if st.button('Top active authors'):
@@ -60,9 +60,9 @@ def get_page():
                 st.session_state.button_clicked = 'top active authors'
     with col4:
         if st.session_state.authenticated:
-            if st.button(f'TOP 200 Staked SPS Holders'):
+            if st.button(f'Rich list SPSP holders'):
                 # Store parameters for use in the results container
-                st.session_state.button_clicked = 'top 200 spsp'
+                st.session_state.button_clicked = 'rich list spsp'
 
     # Handle execution based on which button was clicked
     with results_container:
@@ -90,14 +90,14 @@ def get_page():
             account_list = top_authors.name.to_list()
             create_page(account_list)
 
-        elif button_clicked == 'top spsp':
+        elif button_clicked == 'rich list spsp 100':
             rich_list = spl.get_spsp_richlist()
             if not rich_list.empty:
                 rich_list = rich_list.sort_values(by="balance", ascending=False)
                 account_list = rich_list.player.head(100).to_list()
                 create_page(account_list)
 
-        elif button_clicked == 'top 200 spsp':
+        elif button_clicked == 'rich list spsp':
             rich_list = spl.get_spsp_richlist()
             if not rich_list.empty:
                 rich_list = rich_list.sort_values(by="balance", ascending=False)

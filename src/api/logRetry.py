@@ -1,4 +1,5 @@
 import logging
+import streamlit as st
 from urllib3 import Retry
 
 
@@ -27,6 +28,7 @@ class LogRetry(Retry):
 
         # Log the retry information
         if response:
+            st.toast(f"Backoff retrying API request... waiting {current_backoff}s", icon="⚠️")
             self.logger.warning(
                 f"Retry triggered for {url}. Status: {response.status}. "
                 f"Retry {retry_count}: Backoff {current_backoff}s in the sequence."

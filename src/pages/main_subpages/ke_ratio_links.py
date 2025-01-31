@@ -2,6 +2,12 @@ import streamlit as st
 
 posts = [
     {
+        "title": "New Splinterlands Contest & KE Indicator Guide",
+        "summary": "This post introduces a new Splinterlands contest, explaining the KE Indicator—a metric for assessing player engagement and knowledge. It provides strategies to improve KE scores and details the contest rules.",
+        "url": "https://peakd.com/@libertycrypto27/new-splinterlands-contest-rules-ke-indicator-what-it-is-how-to-improve-it-engita-835",
+        "thumbnail": "https://images.hive.blog/0x0/https://files.peakd.com/file/peakd-hive/libertycrypto27/23uR1ARfnpLNq1Pb2fwjzPW2UxpTVDkz5frNkUT7YTPkvvsBBBpx456nLCPnqaoxNuwya.png"
+    },
+    {
         "title": "Understand KE Ratio and New Splinterlands Challenge Rules",
         "summary": "This post explores the application of the KE-Ratio within Splinterlands and discusses recent changes in the game's challenge rules to enhance community engagement and fair competition.",
         "url": "https://peakd.com/hive-13323/@underlock/understand-ke-ratio-and-new-splinterlands-challenge-rules",

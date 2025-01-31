@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+import pandas as pd
 import streamlit as st
 
 from src.api import hive_sql, spl
@@ -10,35 +11,51 @@ from src.pages.main_subpages import hivesql_balances, spl_balances
 log = logging.getLogger("Top Holders")
 
 
-def analyse_accounts(accounts):
+def analyse_accounts(accounts, sps_balances=None):
     df = hivesql_balances.prepare_data(accounts)
 
     # Add date column
     df.insert(0, "date", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    df = spl_balances.prepare_date(df)
+    if isinstance(sps_balances, pd.DataFrame):
+        sps_balances = sps_balances.rename(columns={"balance": "SPSP"})
+        df = df.merge(sps_balances, left_on="name", right_on="player", how="left")
+        df = df.drop(['player'], axis=1)
+    else:
+        df = spl_balances.prepare_date(df)
     return df
 
 
-def create_page(account_list):
+def create_page(account_list, sps_balances=None):
     """Generate the results page with graphs and a table."""
-    result = analyse_accounts(account_list)
+    result = analyse_accounts(account_list, sps_balances)
 
     if not result.empty:
-        graphs.add_ke_ratio_graph(result)
-        graphs.add_ke_hp_graph(result)
-        graphs.add_spsp_vs_hp_graph(result)
-        graphs.add_spsp_graph(result)
+        # Create tabs for each graph
+        tab1, tab2, tab3, tab4 = st.tabs(["KE Ratio", "KE vs HP", "SPSP vs HP", "SPSP Distribution"])
+
+        with tab1:
+            st.write("### KE Ratio Analysis")
+            st.write("This graph shows the relationship between KE Ratio and other variables. "
+                     "Higher KE ratios indicate more staking efficiency in the ecosystem.")
+            graphs.add_ke_ratio_graph(result)
+
+        with tab2:
+            st.write("### KE vs HP")
+            st.write(
+                "This graph plots KE Ratio against HP, allowing us to see how staking power influences KE efficiency.")
+            graphs.add_ke_hp_graph(result)
+
+        with tab3:
+            st.write("### SPSP vs HP")
+            st.write("This graph shows the distribution of Staked SPS (SPSP) relative to HP holdings.")
+            graphs.add_spsp_vs_hp_graph(result)
+
+        with tab4:
+            st.write("### SPSP Distribution")
+            st.write("This graph visualizes the overall distribution of Staked SPS (SPSP) among holders.")
+            graphs.add_spsp_graph(result)
         st.dataframe(result, hide_index=True)
-
-
-def fetch_rich_list_spsp(top_n=None):
-    """Fetch SPSP rich list and optionally return only the top N."""
-    rich_list = spl.get_spsp_richlist()
-    if rich_list.empty:
-        return []
-    sorted_list = rich_list.sort_values(by="balance", ascending=False)
-    return sorted_list.head(top_n).player.tolist() if top_n else sorted_list.player.to_list()
 
 
 def handle_top_active_authors(posting_reward, comments, months):
@@ -79,20 +96,14 @@ def get_page():
             st.session_state.button_clicked = "top authors"
 
     with col2:
-        if st.button("TOP 100 Staked SPS Holders"):
-            st.session_state.button_clicked = "rich list spsp 100"
+        if st.button("Richlist Staked SPS Holders"):
+            st.session_state.button_clicked = "rich list spsp"
 
     with col3:
         if st.session_state.get("authenticated"):
             if st.button("Top active authors"):
                 st.session_state.button_clicked = "top active authors"
 
-    with col4:
-        if st.session_state.get("authenticated"):
-            if st.button("Rich list SPSP holders"):
-                st.session_state.button_clicked = "rich list spsp"
-
-    # Execute actions based on button clicks
     button_clicked = st.session_state.get("button_clicked")
     if not button_clicked:
         return
@@ -108,8 +119,6 @@ def get_page():
             top_authors = hive_sql.get_top_posting_rewards(account_limit, posting_reward)
             create_page(top_authors.name.to_list())
 
-        elif button_clicked == "rich list spsp 100":
-            create_page(fetch_rich_list_spsp(top_n=100))
-
         elif button_clicked == "rich list spsp":
-            create_page(fetch_rich_list_spsp())
+            rich_list = spl.get_spsp_richlist()
+            create_page(rich_list.player.to_list(), rich_list)

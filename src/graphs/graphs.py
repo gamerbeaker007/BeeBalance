@@ -171,7 +171,7 @@ def add_ke_hp_graph(df):
     # Scatter plot for KE Ratio
     fig.add_trace(
         go.Scatter(
-            x=df["hp_rank"],  # Set HP as X-axis labels
+            x=df["hp_rank"],
             y=df["ke_ratio"],
             mode="markers",
             marker=dict(
@@ -207,9 +207,27 @@ def add_ke_hp_graph(df):
                 f"HP Rank: {row['hp_rank']}<br>Total Rewards: {row['total_rewards']:.2f}"
                 for _, row in df.iterrows()
             ],
-            # yaxis="y2"
         )
     )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df["hp_rank"],
+            y=df["hp"],
+            mode="lines",
+            line=dict(
+                color="red",
+            ),
+            name="HP",
+            hoverinfo="text",
+            text=[
+                f"Name: {row['name']}<br>KE Ratio: {row['ke_ratio']:.2f}<br>HP: {row['hp']:.2f}<br>"
+                f"HP Rank: {row['hp_rank']}<br>Total Rewards: {row['total_rewards']:.2f}"
+                for _, row in df.iterrows()
+            ],
+        )
+    )
+
 
     fig.update_layout(
         title="HP vs KE Ratio & Total Rewards",

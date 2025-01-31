@@ -35,25 +35,106 @@ def create_page(account_list, sps_balances=None):
         tab1, tab2, tab3, tab4 = st.tabs(["KE Ratio", "KE vs HP", "SPSP vs HP", "SPSP Distribution"])
 
         with tab1:
-            st.write("### KE Ratio Analysis")
-            st.write("This graph shows the relationship between KE Ratio and other variables. "
-                     "Higher KE ratios indicate more staking efficiency in the ecosystem.")
+            with st.expander("KE Ratio Analysis Graph Explanation"):
+                st.markdown("""
+                    ### KE Ratio Analysis
+                    This graph visualizes the relationship between KE Ratio and HP, helping to analyze how efficiently users generate rewards relative to their staked HP.
+    
+                    #### Graph Components:
+                    * X-axis → HP (Hive Power) (Staked influence in the ecosystem).
+                    * Y-axis → KE Ratio (Indicator of reward efficiency).
+                    * Bubble Size → Staked SPS (SPSP) (Users’ staked SPS holdings).
+                    
+                    #### How to Read This Graph
+                    * Larger bubbles indicate users who have staked more SPSP.
+                    * Higher KE Ratio means the user receives more rewards relative to their HP.
+                    * Users with low HP but high KE Ratio are generating higher returns on their staked HP.
+                    * Users with high HP but lower KE Ratio may have lower reward efficiency despite their large stake.
+                    
+                    #### Key Insights
+                    * Are higher HP holders also have higher KE Ratios, or is it independent of HP?
+                    * Does staking SPSP impact KE efficiency?
+                    * Are there outliers with exceptionally high KE Ratios (extractors)?
+                    
+                    """, unsafe_allow_html=True)
             graphs.add_ke_ratio_graph(result)
 
         with tab2:
-            st.write("### KE vs HP")
-            st.write(
-                "This graph plots KE Ratio against HP, allowing us to see how staking power influences KE efficiency.")
+            with st.expander("KE vs HP Graph Explanation"):
+                st.markdown(
+                    """
+                    ### KE vs HP
+                    This graph visualizes the relationship between KE Ratio, Total Rewards, and HP, plotted against Ranked HP.
+                    
+                    #### Graph Components:
+                    * 🟠 Orange Markers → KE Ratio (Efficiency indicator).
+                    * 🔵 Blue Markers → Total Rewards (Sum of Author & Curation Rewards).
+                    * 🔴 Red Line → HP Values (Distribution of Staked HP).
+                    
+                    #### What is Ranked HP?
+                    * Ranked HP is a way of organizing HP values from highest to lowest.
+                    * The highest HP holder is assigned rank 0, the second highest rank 1, and so on.
+                    * This allows for better visualization of how KE Ratio and rewards are distributed across HP holders.
+                    
+                    #### How to Read This Graph
+                    * The X-axis represents Ranked HP (lower ranks = more HP).
+                    * The Y-axis (left) shows KE Ratio and Total Rewards.
+                    * The Y-axis (right) shows the actual HP values.
+                    * Comparing the markers helps identify whether higher HP leads to better KE efficiency and rewards.
+                    
+                    This graph provides insights into how different HP levels impact staking efficiency and rewards earned. 
+    
+                    """, unsafe_allow_html=True)
             graphs.add_ke_hp_graph(result)
 
         with tab3:
-            st.write("### SPSP vs HP")
-            st.write("This graph shows the distribution of Staked SPS (SPSP) relative to HP holdings.")
+            with st.expander("SPSP vs HP Graph Explanation"):
+                st.markdown("""
+                ### SPSP vs HP
+                This graph visualizes how Staked SPS (SPSP) is distributed relative to HP holdings, providing insights into the staking behavior of users.
+    
+                #### Graph Components:
+                * X-axis → HP (Hive Power) (Users’ staked influence in the ecosystem).
+                * Y-axis → SPSP (Staked SPS) (How much SPS is staked by each user).
+                * Bubble Size → Posting Rewards (Total author rewards received).
+                
+                #### How to Read This Graph
+                * Larger bubbles indicate users who have earned higher posting rewards.
+                * The higher a point is on the graph, the more SPSP a user has staked.
+                * The further right a point is, the more HP the user has.
+                
+                #### Key Insights
+                * Does higher HP correlate with higher SPSP staking?
+                * Are users with high posting rewards also staking SPSP?
+                *Are there outliers—users with high SPSP but low HP?
+                
+                This graph helps understand whether strong HP holders are also staking SPSP and how posting rewards relate to staking behavior. 
+                """, unsafe_allow_html=True)
             graphs.add_spsp_vs_hp_graph(result)
 
         with tab4:
-            st.write("### SPSP Distribution")
-            st.write("This graph visualizes the overall distribution of Staked SPS (SPSP) among holders.")
+            with st.expander("SPSP Distribution Graph Explanation"):
+                st.markdown("""
+                ### SPSP Distribution
+                This graph visualizes the distribution of Staked SPS (SPSP) among holders, showing how SPSP is concentrated among the top accounts.
+                
+                #### Graph Components:
+                * X-axis → Account Names (Ordered by SPSP holdings, from highest to lowest).
+                * Y-axis → Amount of SPSP (Staked SPS balance for each account).
+                
+                #### How to Read This Graph
+                * The left side of the graph represents the top SPSP holders.
+                * The right side represents users with lower SPSP stakes.
+                * Higher bars indicate accounts with larger SPSP stakes.
+                * The gradual decline (or sharp drop-off) shows how SPSP is distributed among the ranked list.
+                
+                #### Key Insights
+                * Is SPSP concentrated among a few large holders, or is it more evenly distributed?
+                * How steep is the drop-off from the highest to the lowest SPSP holders?
+                * Are there many mid-sized holders, or is there a large gap between top and bottom accounts?
+                
+                This graph helps in understanding the concentration of staking power and whether SPSP is widely distributed or dominated by a few top holders.             
+                """)
             graphs.add_spsp_graph(result)
         st.dataframe(result, hide_index=True)
 

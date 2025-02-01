@@ -30,12 +30,14 @@ def get_card_edition_value(account, list_prices_df, market_prices_df):
 
     # Remove not fully unbouned form the list, because you cannot sell then they have no value for now!
     sellable_cards_df = player_collection[player_collection.apply(is_card_sellable, axis=1)].reset_index(drop=True)
-    # Group all bxc and unbounded
-    sellable_cards_df = group_bcx(sellable_cards_df)
 
     return_df = pd.DataFrame({'date': datetime.today().strftime('%Y-%m-%d'),
                               'account_name': account}, index=[0])
-    if not player_collection.empty:
+
+    if not sellable_cards_df.empty:
+        # Group all bxc and unbounded
+        sellable_cards_df = group_bcx(sellable_cards_df)
+
         for edition in Edition.__iter__():
             log.debug(f'processing edition: {edition}')
             temp_df = sellable_cards_df.loc[(sellable_cards_df.edition == edition.value)]

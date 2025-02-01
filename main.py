@@ -5,7 +5,7 @@ import sys
 import streamlit as st
 from st_pages import get_nav_from_toml, add_page_title
 
-from src.pages import main_page, comments_list_page, top_holders_page
+from src.pages import main_page, comments_list_page, top_holders_page, custom_queries_page
 from src.util import authentication
 
 
@@ -50,3 +50,7 @@ if pg.title == "Top Holders":
     with placeholder.container():
         authentication.get_page()
         top_holders_page.get_page()
+if pg.title == "Custom Queries":
+    with placeholder.container():
+        authentication.get_page()
+        custom_queries_page.get_page()

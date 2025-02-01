@@ -7,6 +7,7 @@ import pypyodbc
 import streamlit as st
 
 log = logging.getLogger("Hive SQL")
+
 # Access secrets
 db_username = st.secrets["database"]["username"]
 db_password = st.secrets["database"]["password"]
@@ -23,16 +24,16 @@ connection_string = (
 )
 
 
-def execute_query(query, params=None):
+def execute_query_df(query, params=None):
     """
-    Executes a SQL query with optional parameters.
+    Executes a SQL query with optional parameters and returns a Pandas DataFrame.
 
     Parameters:
     - query: str, the SQL query to execute.
     - params: list or tuple, optional, the parameters for the query.
 
     Returns:
-    - list of tuples, the result set from the query.
+    - pd.DataFrame with query results or an empty DataFrame on failure/no results.
     """
     connection = None
     try:
@@ -44,17 +45,20 @@ def execute_query(query, params=None):
         else:
             cursor.execute(query)
 
-        try:
-            result = cursor.fetchall()  # Fetch all rows
-        except pypyodbc.ProgrammingError:
-            result = None
+        # Fetch column names dynamically from the cursor description
+        columns = [column[0] for column in cursor.description] if cursor.description else []
 
-        connection.commit()
+        # Fetch results
+        result = cursor.fetchall()
+        if result:
+            return pd.DataFrame(result, columns=columns)
+        else:
+            return pd.DataFrame(columns=columns)
 
-        return result
     except pypyodbc.Error as e:
         log.error(f"Database error: {e}")
-        raise
+        return pd.DataFrame()  # Return empty DataFrame on database error
+
     finally:
         if connection:
             connection.close()
@@ -62,10 +66,10 @@ def execute_query(query, params=None):
 
 @lru_cache(maxsize=1)
 def get_hive_per_mvest():
-    result = execute_query("SELECT total_vesting_fund_hive, total_vesting_shares  FROM DynamicGlobalProperties")
-    if result:  # Ensure result is not empty
+    result = execute_query_df("SELECT total_vesting_fund_hive, total_vesting_shares FROM DynamicGlobalProperties")
+    if not result.empty:  # Ensure result is not empty
         # Unpack the first row of the result
-        total_vesting_fund_hive, total_vesting_shares = result[0]
+        total_vesting_fund_hive, total_vesting_shares = result.iloc[0]
         return float(total_vesting_fund_hive) / (float(total_vesting_shares) / 1e6)
     else:
         # Return an empty Series if the query returns no rows
@@ -82,10 +86,10 @@ def get_hive_balances(account_names):
         raise ValueError("account_names must be a list")
 
     hive_per_mvest = get_hive_per_mvest()
-    all_results = []
+    df = pd.DataFrame()
 
     # Process account names in batches
-    for batch in batch_list(account_names, batch_size=50):
+    for batch in batch_list(account_names, batch_size=5):
         # Create the placeholders for the IN clause
         placeholders = ', '.join(['?'] * len(batch))
 
@@ -94,43 +98,140 @@ def get_hive_balances(account_names):
         SELECT
             name,
             created,
-            CAST(balance AS FLOAT) AS hive,
-            CAST(savings_balance AS FLOAT) AS hive_savings,
-            CAST(hbd_balance AS FLOAT) AS hbd,
-            CAST(savings_hbd_balance AS FLOAT) AS hbd_savings,
-            CAST(reputation AS FLOAT) AS reputation,
-            CAST(vesting_shares AS FLOAT) AS vesting_shares,
-            CAST(delegated_vesting_shares AS FLOAT) AS delegated_vesting_shares,
-            CAST(received_vesting_shares AS FLOAT) AS received_vesting_shares,
-            CAST(curation_rewards AS FLOAT) / 1000.0 AS curation,
-            CAST(posting_rewards AS FLOAT) / 1000.0 AS posting
+            CAST (balance AS float) AS hive,
+            CAST (savings_balance AS float) AS hive_savings,
+            CAST (hbd_balance AS float) AS hbd,
+            CAST (savings_hbd_balance AS float) AS hbd_savings,
+            CAST (reputation AS float) AS reputation,
+            CAST (vesting_shares AS float) AS vesting_shares,
+            CAST (delegated_vesting_shares AS float) AS delegated_vesting_shares,
+            CAST (received_vesting_shares AS float) AS received_vesting_shares,
+            CAST (curation_rewards AS float) / 1000.0 AS curation_rewards,
+            CAST (posting_rewards AS float) / 1000.0 AS posting_rewards
         FROM accounts
         WHERE name IN ({placeholders})
         """
 
-        batch_result = execute_query(query, batch)
-        if batch_result:
-            all_results.extend(batch_result)
+        batch_result = execute_query_df(query, batch)
+        if not batch_result.empty:
+            df = pd.concat([df, batch_result])
 
-    # Define DataFrame columns
-    columns = [
-        "name", "created", "hive", "hive_savings", "hbd", "hbd_savings",
-        "reputation", "vesting_shares", "delegated_vesting_shares", "received_vesting_shares", "curation_rewards",
-        "posting_rewards"
-    ]
+    if not df.empty:
+        df["reputation_score"] = reputation_to_score(df["reputation"])
 
-    df = pd.DataFrame.from_records(all_results, columns=columns)
-    df["reputation"] = np.where(
-        df["reputation"] > 0,  # Only apply log10() to positive values
-        ((np.log10(df["reputation"].clip(lower=1e-9)) - 9) * 9) + 25,
-        0.0  # Assign 0.0 when reputation is 0 or negative
-    )
+        conversion_factor = hive_per_mvest / 1e6
+        df["hp"] = conversion_factor * df["vesting_shares"]
+        df["hp delegated"] = conversion_factor * df["delegated_vesting_shares"]
+        df["hp received"] = conversion_factor * df["received_vesting_shares"]
+        df["ke_ratio"] = (df["curation_rewards"] + df["posting_rewards"]) / df["hp"]
 
+    return df
+
+
+def reputation_to_score(reputation):
+    """
+    Converts raw reputation to reputation score.
+
+    Parameters:
+    - reputation (float, int, or Pandas Series): The reputation value(s) to be converted.
+
+    Returns:
+    - Reputation score (float if input is scalar, Pandas Series if input is a Series)
+    """
+    if isinstance(reputation, (int, float)):  # Scalar case
+        return ((np.log10(max(reputation, 1e-9)) - 9) * 9) + 25 if reputation > 0 else 0.0
+    else:  # Pandas Series or NumPy array case
+        return np.where(
+            reputation > 0,
+            ((np.log10(np.clip(reputation, 1e-9, None)) - 9) * 9) + 25,
+            0.0
+        )
+
+
+def score_to_reputation(reputation_score):
+    """
+    Converts reputation score back to raw reputation.
+
+    Parameters:
+    - reputation_score (float, int, or Pandas Series): The reputation score to be converted.
+
+    Returns:
+    - Raw reputation (float if input is scalar, Pandas Series if input is a Series)
+    """
+    if isinstance(reputation_score, (int, float)):  # Scalar case
+        return 10 ** ((reputation_score - 25) / 9 + 9) if reputation_score > 0 else 0.0
+    else:  # Pandas Series or NumPy array case
+        return np.where(
+            reputation_score > 0,
+            10 ** ((reputation_score - 25) / 9 + 9),
+            0.0
+        )
+
+
+def get_hive_balances_params(params):
+
+    hive_per_mvest = get_hive_per_mvest()
     conversion_factor = hive_per_mvest / 1e6
-    df["hp"] = conversion_factor * df["vesting_shares"]
-    df["hp delegated"] = conversion_factor * df["delegated_vesting_shares"]
-    df["hp received"] = conversion_factor * df["received_vesting_shares"]
-    df["ke_ratio"] = (df["curation_rewards"] + df["posting_rewards"]) / df["hp"]
+
+    vesting_shares_min = params['hp_min'] / conversion_factor
+    vesting_shares_max = params['hp_max'] / conversion_factor
+    reputation_min = score_to_reputation(params['reputation_min'])
+    reputation_max = score_to_reputation(params['reputation_max'])
+
+    query = f"""
+        SELECT 
+            a.name,
+            CAST (a.balance AS float) AS hive,
+            CAST (a.savings_balance AS float) AS hive_savings,
+            CAST (a.hbd_balance AS float) AS hbd,
+            CAST (a.savings_hbd_balance AS float) AS hbd_savings,
+            CAST (a.reputation AS float) AS reputation,
+            CAST (a.vesting_shares AS float) AS vesting_shares,
+            CAST (a.delegated_vesting_shares AS float) AS delegated_vesting_shares,
+            CAST (a.received_vesting_shares AS float) AS received_vesting_shares,
+            CAST (a.curation_rewards AS float) / 1000.0 AS curation_rewards,
+            CAST (a.posting_rewards AS float) / 1000.0 AS posting_rewards,
+            COUNT(c.permlink) AS comment_count
+        FROM 
+            Accounts a
+        JOIN 
+            Comments c
+        ON 
+            a.name = c.author
+        WHERE 
+            a.posting_rewards > {params['posting_rewards_min']}
+            AND a.posting_rewards < {params['posting_rewards_max']}
+            AND a.vesting_shares > {vesting_shares_min}
+            AND a.vesting_shares < {vesting_shares_max}
+            AND a.reputation > {reputation_min}
+            AND a.reputation < {reputation_max}
+            
+            AND c.created >= DATEADD(MONTH, -{params['months']}, GETDATE())
+        GROUP BY 
+            a.name,
+            a.balance,
+            a.savings_balance,
+            a.hbd_balance,
+            a.savings_hbd_balance,
+            a.reputation,
+            a.vesting_shares,
+            a.delegated_vesting_shares,
+            a.received_vesting_shares,
+            a.curation_rewards,
+            a.posting_rewards
+        HAVING 
+            COUNT(c.permlink) > {params['comments']};
+    """
+
+    df = execute_query_df(query)
+
+    if not df.empty:
+        df["reputation_score"] = reputation_to_score(df['reputation'])
+
+        df["hp"] = conversion_factor * df["vesting_shares"]
+        df["hp delegated"] = conversion_factor * df["delegated_vesting_shares"]
+        df["hp received"] = conversion_factor * df["received_vesting_shares"]
+        df["ke_ratio"] = (df["curation_rewards"] + df["posting_rewards"]) / df["hp"]
 
     return df
 
@@ -144,9 +245,8 @@ def get_commentators(permlinks):
         WHERE parent_permlink IN ({placeholders})   
         AND depth = 1
     """
-    authors = execute_query(query, permlinks)
-    authors = [row[0] for row in authors]
-    return authors
+    df = execute_query_df(query, permlinks)
+    return df.author.to_list()
 
 
 def get_top_posting_rewards(number, minimal_posting_rewards):
@@ -156,15 +256,12 @@ def get_top_posting_rewards(number, minimal_posting_rewards):
         WHERE posting_rewards > {minimal_posting_rewards}
         ORDER BY posting_rewards DESC
     """
-    result = execute_query(query)
+    result = execute_query_df(query)
 
-    columns = [
-        "name", "posting_rewards"
-    ]
-    return pd.DataFrame.from_records(result, columns=columns)
+    return result
 
 
-def get_active_hivers(posting_rewards, comments, months):
+def get_active_hiver_users(posting_rewards, comments, months):
     query = f"""
             SELECT 
                 a.name,
@@ -184,9 +281,4 @@ def get_active_hivers(posting_rewards, comments, months):
             HAVING 
                 COUNT(c.permlink) > {comments};
     """
-    result = execute_query(query)
-    columns = [
-        "name", "posting_rewards", f"comment past {months} months"
-    ]
-
-    return pd.DataFrame.from_records(result, columns=columns)
+    return execute_query_df(query)

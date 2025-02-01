@@ -1,7 +1,5 @@
 import logging
-
 import streamlit as st
-
 from src.api import hive_sql
 
 log = logging.getLogger("Main Page")
@@ -9,27 +7,27 @@ log = logging.getLogger("Main Page")
 
 def get_page():
     st.title('Select unique hive commentators')
-    st.write('Enter permlink to retrieve commentators on a post')
-    st.write('Permlink is the end an url.')
-    st.write('e.g.:')
-    st.write('url: https://peakd.com/hive-13323/@splinterlands/splinterlands-community-engagement-challenge-favorite'
-             '-strategies-sqkhvm')
-    st.write('permlink: splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm')
+    st.markdown("""
+    Enter permlink to retrieve commentators on a post <br>
+    Permlink is the end an url.<br>
+    
+    e.g.:<br>
+    url: https://peakd.com/hive-13323/@splinterlands/splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm<br>
+    permlink: splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm
+    """, unsafe_allow_html=True)
 
     permlinks = st.text_input('space separated permlinks')
-
     permlinks = [name.strip() for name in permlinks.split(' ') if name.strip()]
     if permlinks:
         log.info(f'Analysing commentators: {permlinks}')
 
-        with st.spinner('"Loading data... Please wait."'):
+        with st.spinner('Loading data... Please wait.'):
             authors = hive_sql.get_commentators(permlinks)
             if authors:
                 authors_string = ' '.join(authors)
 
                 # Display the list of authors
-                st.write('### Unique Commenters:')
-                st.write(authors)
+                st.write(f'### Unique Commenters: {len(authors)} (Depth 1)')
 
                 # Add a button to copy the list to the clipboard
                 st.write('### Copy List to Clipboard:')

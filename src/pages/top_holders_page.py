@@ -141,7 +141,7 @@ def create_page(account_list, sps_balances=None):
 
 def handle_top_active_authors(posting_reward, comments, months):
     """Fetch and display the top active authors."""
-    active_authors = hive_sql.get_active_hivers(posting_reward, comments, months)
+    active_authors = hive_sql.get_active_hiver_users(posting_reward, comments, months)
 
     if active_authors.empty:
         st.warning("No active authors found.")

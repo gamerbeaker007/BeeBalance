@@ -12,7 +12,7 @@ def get_page():
     @st.cache_resource
     def get_pyg_renderer() -> "StreamlitRenderer":
         posting_reward = 10000
-        number = 10000
+        number = 3000
         active_authors = hive_sql.get_top_posting_rewards(number, posting_reward)
 
         if active_authors.empty:

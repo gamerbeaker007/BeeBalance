@@ -13,7 +13,7 @@ log = logging.getLogger('SPL Estimates')
 def add_estimations(row, list_prices_df, market_prices_df, placeholder):
     account_name = row['name']
     if not spl.player_exist(account_name):
-        logging.info(f'Not a splinterlands account skip {account_name}')
+        log.info(f'Not a splinterlands account skip {account_name}')
         return row
 
     estimates = spl_util.get_portfolio_value(account_name, list_prices_df, market_prices_df, placeholder)
@@ -113,7 +113,7 @@ def get_land_card(df):
 
     # Create the card
     return create_card(
-        'Land Claims / Deeds / Totem Claims',
+        'Land + Totem Claims',
         f'{round(float(land_value), 2)} $',
         icons.land_icon_url_svg,
     )
@@ -152,41 +152,47 @@ def get_other_values_card(df):
     )
 
 
-def get_page(df, max_number_of_account):
+def prepare_data(df, max_number_of_accounts):
+    if df.index.size > max_number_of_accounts:
+        return df
+
+    loading_placeholder = st.empty()
+
+    # Store the current column order
+    initial_columns = df.columns.tolist()
+
+    with st.spinner('Loading data... Please wait.'):
+        list_prices_df = spl.get_all_cards_for_sale_df()
+        market_prices_df = peakmonsters.get_market_prices_df()
+
+        spl_estimates = df.apply(lambda row:
+                                 add_estimations(row,
+                                                 list_prices_df,
+                                                 market_prices_df,
+                                                 loading_placeholder), axis=1)
+
+        # Reorder columns: put initial columns first, followed by any new columns
+        new_columns = [col for col in spl_estimates.columns if col not in initial_columns]
+        reordered_columns = initial_columns + new_columns
+        spl_estimates = spl_estimates[reordered_columns]
+
+    loading_placeholder.empty()
+    return spl_estimates
+
+
+def get_page(df, max_number_of_accounts):
     st.title('Splinterlands \'Estimated\' Value ($)')
 
-    if df.index.size <= max_number_of_account:
-        loading_placeholder = st.empty()
-
-        # Store the current column order
-        initial_columns = df.columns.tolist()
-
-        with st.spinner('Loading data... Please wait.'):
-            list_prices_df = spl.get_all_cards_for_sale_df()
-            market_prices_df = peakmonsters.get_market_prices_df()
-
-            spl_estimates = df.apply(lambda row:
-                                     add_estimations(row,
-                                                     list_prices_df,
-                                                     market_prices_df,
-                                                     loading_placeholder), axis=1)
-
-            # Reorder columns: put initial columns first, followed by any new columns
-            new_columns = [col for col in spl_estimates.columns if col not in initial_columns]
-            reordered_columns = initial_columns + new_columns
-            spl_estimates = spl_estimates[reordered_columns]
-
-        loading_placeholder.empty()
-
-        total_card = get_total_card(spl_estimates)
-        collection_card = get_collection_card(spl_estimates)
-        dec_card = get_dec_card(spl_estimates)
-        sps_card = get_sps_card(spl_estimates)
-        land_card = get_land_card(spl_estimates)
-        others_card = get_other_values_card(spl_estimates)
-        license_card = get_license_card(spl_estimates)
-        voucher_card = get_voucher_card(spl_estimates)
-        credits_card = get_credits_card(spl_estimates)
+    if df.index.size <= max_number_of_accounts:
+        total_card = get_total_card(df)
+        collection_card = get_collection_card(df)
+        dec_card = get_dec_card(df)
+        sps_card = get_sps_card(df)
+        land_card = get_land_card(df)
+        others_card = get_other_values_card(df)
+        license_card = get_license_card(df)
+        voucher_card = get_voucher_card(df)
+        credits_card = get_credits_card(df)
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -204,8 +210,6 @@ def get_page(df, max_number_of_account):
             st.markdown(credits_card, unsafe_allow_html=True)
 
         with st.expander("Estimated value data", expanded=False):
-            st.dataframe(spl_estimates, hide_index=True)
-        return spl_estimates
+            st.dataframe(df, hide_index=True)
     else:
-        st.write(f'Skip SPL estimate more then {max_number_of_account} accounts requested')
-        return df
+        st.write(f'Skip SPL estimate more then {max_number_of_accounts} accounts requested')

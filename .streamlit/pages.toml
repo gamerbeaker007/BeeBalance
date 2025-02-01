@@ -7,3 +7,9 @@ icon = ':bar_chart:'
 path = 'src/pages/comments_list_page.py'
 name = 'Comments List'
 icon = ':notebook:'
+
+
+[[pages]]
+path = 'src/pages/top_holders_page.py'
+name = 'Top Holders'
+icon = ':technologist:'

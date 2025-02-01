@@ -11,24 +11,36 @@ extra_columns = [
 
 
 def add_assets(row, placeholder):
+    """
+    Add assets (collection power and deeds) to a player's row.
+
+    :param row: A row from a DataFrame.
+    :param placeholder: Streamlit placeholder to display status messages.
+    :return: A modified row with added asset values.
+    """
     placeholder.text(f"Loading SPL Balances for account: {row['name']}")
 
-    player_details = spl.get_player_details(row["name"])
-    if not player_details:
-        return row
-    row['collection_power'] = player_details['collection_power']
+    # Ensure we modify a copy of row
+    row = row.copy()
 
-    player_deeds = spl.get_deeds_collection(row['name'])
-    if not player_deeds:
-        return row
+    # Fetch player card collection and calculate collection power
+    player_card_collection = spl.get_player_collection_df(row["name"])
+    if not player_card_collection.empty:
+        row["collection_power"] = player_card_collection["collection_power"].sum()
+    else:
+        row["collection_power"] = 0  # Default value if empty
 
-    row['deeds'] = len(player_deeds)
+    # Fetch player deeds collection and count
+    player_deeds = spl.get_deeds_collection(row["name"])
+    if not player_deeds.empty:
+        row["deeds"] = len(player_deeds)
+    else:
+        row["deeds"] = 0  # Default value if empty
+
     return row
 
 
-def get_page(df):
-    st.title('Splinterlands Assets')
-
+def prepare_data(df):
     loading_placeholder = st.empty()
 
     with st.spinner('Loading data... Please wait.'):
@@ -36,15 +48,20 @@ def get_page(df):
 
     loading_placeholder.empty()
 
-    for col in extra_columns:
-        if col not in spl_assets.columns:
-            spl_assets[col] = 0
+    return spl_assets
 
-    # Ensure original columns appear first
-    spl_assets = spl_assets[list(df.columns) + extra_columns]
 
+def get_page(df):
+    st.title('Splinterlands Assets')
+
+    add_cards(df)
+
+    with st.expander("Hive + SPL data", expanded=False):
+        st.dataframe(df, hide_index=True)
+
+
+def add_cards(spl_assets):
     col1, col2 = st.columns(2)
-
     with col1:
         st.markdown(
             create_card(
@@ -54,7 +71,6 @@ def get_page(df):
             ),
             unsafe_allow_html=True,
         )
-
     with col2:
         st.markdown(
             create_card(
@@ -64,8 +80,3 @@ def get_page(df):
             ),
             unsafe_allow_html=True,
         )
-
-    with st.expander("Hive+SPL balances + SPL Assets data", expanded=False):
-        st.dataframe(spl_assets, hide_index=True)
-
-    return spl_assets

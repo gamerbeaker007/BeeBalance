@@ -22,7 +22,7 @@ def get_deeds_value(account_name):
     deeds_price_found = 0
     deeds_owned = 0
     deeds_total = 0.0
-    for deed in collection:
+    for index, deed in collection.iterrows():
         deeds_owned += 1
         filter_types = ["rarity", 'plot_status', 'magic_type', 'deed_type']
         df = market_df

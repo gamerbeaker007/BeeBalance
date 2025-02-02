@@ -1,19 +1,21 @@
+import pandas as pd
 import streamlit as st
 from pygwalker.api.streamlit import StreamlitRenderer
 
 from src.api import hive_sql
+from src.graphs import custom_graph
 from src.pages.main_subpages import spl_balances
 
+unauthorized_limit = 100
 query_options = {
-    "HIVE": {
-        "hp": ("hp_min", "hp_max", 0, 1000000000000),  # Min default 0, Max default 1000
-        "reputation": ("reputation_min", "reputation_max", 0, 100),  # Default 25-75
-        "posting_rewards": ("posting_rewards_min", "posting_rewards_max", 500, 1000000000000),  # Default 10-500
-        "months": ("months", 6),  # Default 6
-        "comments": ("comments", 10)
-        # "Sort": ["ASC", "DECS"],
-    },
+    "hp": ("hp_min", "hp_max", 0, 1000000000000),  # Min default 0, Max default 1000
+    "reputation": ("reputation_min", "reputation_max", 0, 100),  # Default 25-75
+    "posting_rewards": ("posting_rewards_min", "posting_rewards_max", 500, 1000000000000),  # Default 10-500
+    "months": ("months", 6),  # Default 6
+    "comments": ("comments", 10)
+    # "Sort": ["ASC", "DECS"],
 }
+
 
 # Function to cache the PyGWalker renderer
 @st.cache_resource
@@ -23,13 +25,14 @@ def get_pyg_renderer(df):
 
 
 def get_page():
+
     st.title("Hive Selection Parameters")
 
     col1, _ = st.columns([1, 2])
 
     with col1:
         params = {}
-        for label, key in query_options['HIVE'].items():
+        for label, key in query_options.items():
             if isinstance(key, tuple) and len(key) == 4:  # Range parameters with defaults
                 col_a, col_b = st.columns(2)
                 with col_a:
@@ -48,25 +51,25 @@ def get_page():
     if "spl_query_results" not in st.session_state:
         st.session_state.spl_query_results = None
 
-    col_hive, col_spl = st.columns([1,5])
-    with col_hive:
-        # Button to execute the query
-        if st.button("Retrieve HIVE data"):
-            st.session_state.spl_query_results = None # Clear SPL dataframe
+    # Button to execute the query
+    if st.button("Retrieve HIVE data"):
+        st.session_state.spl_query_results = None # Clear SPL dataframe
 
-            df = hive_sql.get_hive_balances_params(params)
-            st.session_state.query_results = df  # Store hive data in session state
-            st.session_state.params = params  # Store params as well
+        df = hive_sql.get_hive_balances_params(params)
+        st.session_state.query_results = df  # Store hive data in session state
+        st.session_state.params = params  # Store params as well
+        st.rerun()
+
+    if st.session_state.query_results is not None:
+        df = st.session_state.query_results
+        if st.button("Attach SPL data") and not df.empty:
+            if not st.session_state.get("authenticated") and df.index.size > unauthorized_limit:
+                st.warning(f"You are not authorized to perform such large query continuing with top {unauthorized_limit} rows ")
+                df = df.head(unauthorized_limit)
+            df_spl = spl_balances.prepare_date(df)
+            st.session_state.spl_query_results = df_spl  # Store attached spl data in session state
+            st.dataframe(df_spl)
             st.rerun()
-    with col_spl:
-        # Display query results if available
-        if st.session_state.query_results is not None:
-            df = st.session_state.query_results
-            if st.button("Attach SPL data") and not df.empty:
-                df_spl = spl_balances.prepare_date(df)
-                st.session_state.spl_query_results = df_spl  # Store attached spl data in session state
-                st.dataframe(df_spl)
-                st.rerun()
 
     if st.session_state.query_results is not None:
         df = st.session_state.query_results
@@ -77,9 +80,15 @@ def get_page():
         else:
             st.dataframe(df)
 
+    df = pd.DataFrame()
+    if st.session_state.query_results is not None:
+        df = st.session_state.query_results
     if st.session_state.spl_query_results is not None:
         df = st.session_state.spl_query_results
-        if not df.empty:
-            st.subheader("📊 Explore Data with PyGWalker")
-            renderer = get_pyg_renderer(df)
-            renderer.explorer()
+
+    if not df.empty:
+        st.subheader("📊 Explore Data with PyGWalker")
+        renderer = get_pyg_renderer(df)
+        renderer.explorer()
+        st.subheader("📊 Explore Data with Custom plotly")
+        custom_graph.get_page(df)

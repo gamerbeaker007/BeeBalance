@@ -1,6 +1,5 @@
 import plotly.graph_objects as go
 import streamlit as st
-from streamlit_theme import st_theme
 
 
 def determine_label(row):

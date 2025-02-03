@@ -3,7 +3,7 @@ import streamlit as st
 
 from src.api import hive_sql
 from src.graphs import custom_graph
-from src.pages.custom_queries_subpages import presets_section
+from src.pages.custom_queries_subpages import presets_section, upload_section
 from src.pages.main_subpages import spl_balances
 
 unauthorized_limit = 100
@@ -16,11 +16,11 @@ query_options = {
 }
 
 def get_page():
-    st.title("Hive Selection Parameters")
 
-    col1, _ = st.columns([1, 2])
+    col1, _, col2 = st.columns([1, 1, 1])
 
     with col1:
+        st.subheader("Hive Selection Parameters")
         params = {}
         for label, key in query_options.items():
             if isinstance(key, tuple) and len(key) == 4:
@@ -33,6 +33,9 @@ def get_page():
                 params[key[0]] = st.number_input(label, value=key[1], step=1)
             else:
                 params[key] = st.number_input(label, value=10, step=1)
+    with col2:
+        st.subheader("Upload Data")
+        df = upload_section.get_import_section()
 
     if "query_results" not in st.session_state:
         st.session_state.query_results = None
@@ -70,7 +73,6 @@ def get_page():
         else:
             st.dataframe(df)
 
-    df = pd.DataFrame()
     if st.session_state.query_results is not None:
         df = st.session_state.query_results
     if st.session_state.spl_query_results is not None:
@@ -79,7 +81,7 @@ def get_page():
     if not df.empty:
         st.subheader("📊 View Presets")
 
-        preset_params =  presets_section.get_preset_section(df)
+        preset_params = presets_section.get_preset_section(df)
         selected_preset = st.session_state.selected_preset
 
         if selected_preset:

@@ -1,3 +1,5 @@
+# already in streamlit env
+# streamlit~=1.41.1
 requests==2.32.3
 urllib3==2.2.2
 st-pages==1.0.1
@@ -7,7 +9,4 @@ hiveengine~=0.2.2
 pypyodbc~=1.3.6
 plotly~=5.24.1
 numpy~=1.26.4
-
-# already in streamlit env
-# streamlit~=1.41.1
-
+chardet~=5.2.0

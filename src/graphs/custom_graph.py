@@ -80,6 +80,11 @@ def get_page(df,
         # Apply filter
         df = df[(df[filter_column] >= filter_range[0]) & (df[filter_column] <= filter_range[1])].reset_index(drop=True)
 
+        # Check if the DataFrame is empty after filtering
+        if df.empty:
+            st.warning("⚠️ The selected filter range resulted in no data. Please adjust the filter criteria.")
+            return  # Exit the function early to prevent rendering an empty chart
+
     # Select plot type and color for each Y-axis
     if plot_colors is None:
         plot_colors = {}
@@ -157,7 +162,7 @@ def get_page(df,
         min_bubble_size = 5  # Adjust as needed
 
         # Apply log scale to bubble sizes and ensure a minimum size
-        df["bubble_size"] = np.clip(np.log10(df[bubble_column]) * log_scale_factor, min_bubble_size, None)
+        df["bubble_size"] = np.clip(np.log1p(df[bubble_column]) * log_scale_factor, min_bubble_size, None)
     else:
         df["bubble_size"] = 10  # Default fixed size if bubble size is not enabled
 

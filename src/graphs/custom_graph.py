@@ -23,7 +23,7 @@ def get_page(df,
              ref_color=None,
              filter_column=None,
              filter_range=None):
-    st.title("Customizable Graph in Streamlit")
+    st.subheader("📊 Explore Data with Custom Plotly")
 
     # Sidebar options
     st.sidebar.header("Graph Settings")
@@ -89,13 +89,13 @@ def get_page(df,
 
     enable_bubble_size = st.sidebar.checkbox("Enable Bubble Size", True if enable_bubble_size else None)
 
-    log_scale_factor = 5
+    log_scale_factor = 1
     if enable_bubble_size:
         numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
         bubble_column = st.sidebar.selectbox("Select Bubble Size Column", numeric_columns, index=numeric_columns.index(
             bubble_column) if bubble_column in numeric_columns else 0)
         log_scale_factor = st.sidebar.slider("Bubble Size Log Scale Factor", 1.0, 10.0, 5.0, step=0.1)
-        df["bubble_size"] = np.clip((np.log1p(df[bubble_column])) * log_scale_factor, 5, 30)
+        df["bubble_size"] = np.clip((np.log1p(df[bubble_column])) * log_scale_factor, 1, 30)
 
     enable_ref_line = st.sidebar.checkbox("Enable Reference Line", True if enable_ref_line else None)
     ref_value = st.sidebar.number_input("Reference Line Value",

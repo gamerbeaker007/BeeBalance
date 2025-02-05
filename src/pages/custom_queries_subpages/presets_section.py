@@ -4,7 +4,6 @@ graph_presets = {
     'HP vs KE Ratio': {
         'x_axis': 'hp',
         'y_axes': ['hp', 'ke_ratio', 'posting_rewards'],
-        # 'x_log': True,
         'y_log': True,
         'plot_types': {
             'hp': 'Line',
@@ -68,12 +67,12 @@ def get_preset_section(df):
             valid_presets[preset_name] = preset_params
 
     # Generate buttons dynamically
-    st.subheader('📊 Available Presets')
 
     # Create dynamic button layout (distributes buttons evenly)
     preset_names = list(valid_presets.keys())
     num_buttons = len(preset_names)
     if num_buttons > 0:
+        st.subheader('📊 Available Presets')
         cols = st.columns(min(num_buttons, 5))
 
         for i, preset_name in enumerate(preset_names):

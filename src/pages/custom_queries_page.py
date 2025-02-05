@@ -2,7 +2,7 @@ import streamlit as st
 
 from src.api import hive_sql
 from src.graphs import custom_graph
-from src.pages.custom_queries_subpages import presets_section, upload_section
+from src.pages.custom_queries_subpages import presets_section, upload_section, query_remark
 from src.pages.main_subpages import spl_balances
 
 unauthorized_limit = 100
@@ -20,6 +20,7 @@ def get_page():
 
     with col1:
         st.subheader("Hive Selection Parameters")
+        st.write("Experimental page, work in process ⚠️")
         params = {}
         for label, key in query_options.items():
             if isinstance(key, tuple) and len(key) == 4:
@@ -65,7 +66,9 @@ def get_page():
 
     if st.session_state.query_results is not None:
         df = st.session_state.query_results
-        st.write(f"Accounts found: {df.index.size}, with params {params}")
+        params = st.session_state.params
+        query_remark.add_section(df.index.size, params)
+
         if st.session_state.spl_query_results is not None:
             df_spl = st.session_state.spl_query_results
             st.dataframe(df_spl)
@@ -78,13 +81,10 @@ def get_page():
         df = st.session_state.spl_query_results
 
     if not df.empty:
-        st.subheader("📊 View Presets")
-
         preset_params = presets_section.get_preset_section(df)
         selected_preset = st.session_state.selected_preset
 
         if selected_preset:
             st.write(f"Applying Preset: **{selected_preset}**")
 
-        st.subheader("📊 Explore Data with Custom Plotly")
         custom_graph.get_page(df, **preset_params)

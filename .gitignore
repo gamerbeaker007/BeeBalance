@@ -1,3 +1,5 @@
 venv
 .idea
 /.streamlit/secrets.toml
+/.coverage
+/coverage.xml

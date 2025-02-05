@@ -1,7 +1,7 @@
 import streamlit as st
 
 from src.api import spl
-from src.graphs import graphs
+from src.graphs import ke_ratio_graph
 from src.static import icons
 from src.util.card import create_card
 
@@ -70,7 +70,7 @@ def get_page(df):
     add_cards(df)
 
     if df.name.index.size > 1:
-        graphs.add_ke_ratio_graph(df[['name', 'ke_ratio', 'hp', 'SPSP']])
+        ke_ratio_graph.add(df[['name', 'ke_ratio', 'hp', 'SPSP']])
 
 
 def add_cards(sps_balances):

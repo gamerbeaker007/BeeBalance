@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from src.api import hive_sql, spl
-from src.graphs import graphs
+from src.graphs import ke_ratio_graph, ke_hp_graph, hp_spsp_graph, spsp_graph
 from src.pages.main_subpages import hivesql_balances, spl_balances
 
 log = logging.getLogger("Top Holders")
@@ -57,7 +57,7 @@ def create_page(account_list, sps_balances=None):
                     * Are there outliers with exceptionally high KE Ratios (extractors)?
                     
                     """, unsafe_allow_html=True)
-            graphs.add_ke_ratio_graph(result)
+            ke_ratio_graph.add(result)
 
         with tab2:
             with st.expander("KE vs HP Graph Explanation"):
@@ -85,7 +85,7 @@ def create_page(account_list, sps_balances=None):
                     This graph provides insights into how different HP levels impact staking efficiency and rewards earned. 
     
                     """, unsafe_allow_html=True)
-            graphs.add_ke_hp_graph(result)
+            ke_hp_graph.add(result)
 
         with tab3:
             with st.expander("SPSP vs HP Graph Explanation"):
@@ -110,7 +110,7 @@ def create_page(account_list, sps_balances=None):
                 
                 This graph helps understand whether strong HP holders are also staking SPSP and how posting rewards relate to staking behavior. 
                 """, unsafe_allow_html=True)
-            graphs.add_spsp_vs_hp_graph(result)
+            hp_spsp_graph.add(result)
 
         with tab4:
             with st.expander("SPSP Distribution Graph Explanation"):
@@ -135,13 +135,13 @@ def create_page(account_list, sps_balances=None):
                 
                 This graph helps in understanding the concentration of staking power and whether SPSP is widely distributed or dominated by a few top holders.             
                 """)
-            graphs.add_spsp_graph(result)
+            spsp_graph.add(result)
         st.dataframe(result, hide_index=True)
 
 
 def handle_top_active_authors(posting_reward, comments, months):
     """Fetch and display the top active authors."""
-    active_authors = hive_sql.get_active_hivers(posting_reward, comments, months)
+    active_authors = hive_sql.get_active_hiver_users(posting_reward, comments, months)
 
     if active_authors.empty:
         st.warning("No active authors found.")

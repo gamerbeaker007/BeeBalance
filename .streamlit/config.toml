@@ -4,3 +4,4 @@
 runOnSave = true
 headless = true
 fileWatcherType = "poll"
+maxUploadSize = 10

@@ -4,7 +4,8 @@ from datetime import datetime
 
 import streamlit as st
 
-from src.pages.main_subpages import hivesql_balances, spl_balances_estimates, spl_assets, spl_balances
+from src.pages.main_subpages import hivesql_balances, spl_balances_estimates, spl_assets, spl_balances, \
+    hive_engine_balances
 from src.util.card import card_style
 
 log = logging.getLogger("Main Page")
@@ -45,11 +46,17 @@ def get_page():
                     current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     df.insert(0, 'date', current_datetime)
 
+                    df = hive_engine_balances.prepare_date(df)
+                    hive_engine_balances.get_page(df)
+
                     df = spl_balances.prepare_date(df)
                     spl_balances.get_page(df)
 
                     df = spl_assets.prepare_data(df)
                     spl_assets.get_page(df)
+
+                    with st.expander("Hive + HE + SPL data", expanded=False):
+                        st.dataframe(df, hide_index=True)
 
                     max_number_of_accounts = 5
                     df = spl_balances_estimates.prepare_data(df, max_number_of_accounts)

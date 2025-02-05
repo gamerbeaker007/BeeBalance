@@ -53,11 +53,7 @@ def prepare_data(df):
 
 def get_page(df):
     st.title('Splinterlands Assets')
-
     add_cards(df)
-
-    with st.expander("Hive + SPL data", expanded=False):
-        st.dataframe(df, hide_index=True)
 
 
 def add_cards(spl_assets):

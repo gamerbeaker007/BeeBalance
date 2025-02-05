@@ -153,14 +153,18 @@ def get_page(df,
             if not enable_bubble_size:
                 traces.update_traces(
                     marker=dict(
+                        opacity=0.7,
                         size=10,
                         line=dict(width=1, color='white')
                     )
                 )
 
-            traces.update_traces(marker=dict(
-                line=dict(width=1, color='white')  # Border width and color
-            ))
+            traces.update_traces(
+                marker=dict(
+                    opacity=0.7,
+                    line=dict(width=1, color='white')
+                )
+            )
 
         elif plot_types[y] == "Bar":
             traces = px.bar(df, x=x_axis, y=y, **color_args, **hover_args)

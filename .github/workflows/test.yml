@@ -24,7 +24,7 @@ jobs:
           pip install pytest-cov
 
       - name: Run Tests and Measure Coverage
-        run: pytest --cov=BeeBalance --cov-report=xml
+        run: pytest --cov=src --cov=BeeBalance --cov-report=xml --cov-report=term
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4

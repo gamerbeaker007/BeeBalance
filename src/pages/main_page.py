@@ -46,10 +46,10 @@ def get_page():
                     current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     df.insert(0, 'date', current_datetime)
 
-                    df = hive_engine_balances.prepare_date(df)
+                    df = hive_engine_balances.prepare_data(df)
                     hive_engine_balances.get_page(df)
 
-                    df = spl_balances.prepare_date(df)
+                    df = spl_balances.prepare_data(df)
                     spl_balances.get_page(df)
 
                     df = spl_assets.prepare_data(df)

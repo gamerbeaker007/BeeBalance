@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from src.api import hive_engine
@@ -12,55 +13,70 @@ filter_symbols =[
     'DEC',
 ]
 
-def add_token_balances(row, placeholder):
-    placeholder.text(f"Loading Hive Engine Balances for account: {row['name']}")
 
-    # Specify tokens to filter
+def add_token_balances(row):
+    """
+    Fetch Hive Engine token balances for a given account.
 
+    :param row: A row from a DataFrame.
+    :return: A DataFrame containing the updated token balances.
+    """
     hive_engine_balances = hive_engine.get_account_balances(row["name"], filter_symbols)
 
-    # Pivot the balances DataFrame
     if hive_engine_balances.empty:
-        # Return the original row if no balances are found
-        return row
+        return pd.DataFrame([row])  # Ensure function always returns a DataFrame
 
+    # Pivot balances and stakes
     pivot_df = hive_engine_balances.pivot(index="account", columns="symbol", values=["balance", "stake"])
-
 
     # Rename columns to "HE_{symbol}" for balance and "HE_stake_{symbol}" for stake
     pivot_df.columns = [f"HE_{col[1]}" if col[0] == "balance" else f"HE_stake_{col[1]}" for col in pivot_df.columns]
+    pivot_df = pivot_df.reset_index()
 
-    # Convert the row to a single-row DataFrame for merging
-    row_df = row.to_frame().T
-    merged_row = row_df.merge(pivot_df, left_on="name", right_on="account", how="left")
+    # Convert row to a DataFrame
+    row_df = pd.DataFrame([row])
 
-    # Reorder the columns to ensure original columns are followed by the new ones
+    # Merge Hive Engine balances with original row
+    merged_row = row_df.merge(pivot_df, left_on="name", right_on="account", how="left").drop(columns=["account"])
+
+    # Ensure all expected token columns exist
     for col in pivot_df.columns:
-        if col not in row_df.columns:
-            row_df[col] = pivot_df[col].iloc[0] if col in pivot_df.columns else 0
+        if col not in merged_row.columns:
+            merged_row[col] = 0  # Default missing tokens to 0
 
-    return row_df.iloc[0]  # Return as a Series
+    return merged_row
 
 
-def prepare_date(df):
-    # Create a dynamic placeholder for loading text
-    loading_placeholder = st.empty()
+def prepare_data(df):
+    """
+    Process all rows in df by fetching Hive Engine token balances.
+    Uses a Streamlit status update for real-time user feedback.
+    """
+    status = st.status("Loading Hive Engine Balances...", expanded=True)
 
-    with st.spinner('Loading data... Please wait.'):
-        # Use a custom merge to ensure column order is preserved
-        hive_engine_balances = df.apply(lambda row: add_token_balances(row, loading_placeholder), axis=1)
+    processed_rows = []  # Store processed rows
 
-    loading_placeholder.empty()
+    for index, row in df.iterrows():
+        status.update(label=f"Fetching balances for: {row['name']}...", state="running")
 
-    # Get the original columns
-    orig = df.columns
+        updated_row = add_token_balances(row)  # Process row
+        processed_rows.append(updated_row)  # Append result
 
-    # Determine new columns from hive_engine_balances that are not already in df
-    new = [col for col in hive_engine_balances.columns if col not in orig]
+        status.update(label=f"Completed {row['name']}", state="complete")
 
-    # Reorder columns by placing new ones at the end
-    return hive_engine_balances[list(orig) + new]
+    # Combine processed rows into a DataFrame
+    result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
 
+    status.update(label="All Hive Engine balances loaded!", state="complete")
+
+    # Get original columns
+    orig = df.columns.tolist()
+
+    # Identify new columns
+    new_cols = [col for col in result_df.columns if col not in orig]
+
+    # Ensure column order: original columns first, then new ones
+    return result_df[orig + new_cols]
 
 def get_page(df):
     st.title("Hive Engine Token Overview")
@@ -69,6 +85,3 @@ def get_page(df):
         columns=lambda x: x.replace("HE_stake_", "").replace("HE_", "") + (" (staked)" if "stake" in x else ""))
 
     st.dataframe(df_he, hide_index=True)
-
-
-

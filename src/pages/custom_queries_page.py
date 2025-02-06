@@ -59,7 +59,7 @@ def get_page():
                 st.warning(
                     f"You are not authorized to perform such large query, continuing with top {unauthorized_limit} rows")
                 df = df.head(unauthorized_limit)
-            df_spl = spl_balances.prepare_date(df)
+            df_spl = spl_balances.prepare_data(df)
             st.session_state.spl_query_results = df_spl
             st.dataframe(df_spl)
             st.rerun()

@@ -3,13 +3,10 @@ import streamlit as st
 from src.api import hive_engine
 
 filter_symbols =[
-    'SWAP.HIVE',
-    'SWAP.LTC',
-    'SWAP.BTC',
-    'SWAP.ETH'
-    'SPS',
-    'LEO',
     'DEC',
+    'LEO',
+    'SPS',
+    'SPT',
 ]
 
 def add_token_balances(row, placeholder):

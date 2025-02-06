@@ -3,7 +3,7 @@ import streamlit as st
 from src.api import hive_sql
 from src.graphs import custom_graph
 from src.pages.custom_queries_subpages import presets_section, upload_section, query_remark
-from src.pages.main_subpages import spl_balances
+from src.pages.main_subpages import spl_balances, hive_engine_balances
 
 unauthorized_limit = 100
 query_options = {
@@ -17,7 +17,6 @@ query_options = {
 def get_page():
 
     col1, _, col2 = st.columns([1, 1, 1])
-
     with col1:
         st.subheader("Hive Selection Parameters")
         st.write("Experimental page, work in process ⚠️")
@@ -40,8 +39,8 @@ def get_page():
     if "query_results" not in st.session_state:
         st.session_state.query_results = None
         st.session_state.params = None
-    if "spl_query_results" not in st.session_state:
-        st.session_state.spl_query_results = None
+    if "attached_query_results" not in st.session_state:
+        st.session_state.attached_query_results = None
     if "selected_preset" not in st.session_state:
         st.session_state.selected_preset = None
 
@@ -54,31 +53,43 @@ def get_page():
 
     if st.session_state.query_results is not None:
         df = st.session_state.query_results
+
+        if st.session_state.attached_query_results is not None:
+            df = st.session_state.attached_query_results
+
         if st.button("Attach SPL data") and not df.empty:
             if not st.session_state.get("authenticated") and df.index.size > unauthorized_limit:
                 st.warning(
                     f"You are not authorized to perform such large query, continuing with top {unauthorized_limit} rows")
                 df = df.head(unauthorized_limit)
             df_spl = spl_balances.prepare_date(df)
-            st.session_state.spl_query_results = df_spl
-            st.dataframe(df_spl)
+            st.session_state.attached_query_results = df_spl
             st.rerun()
+
+        if st.button("Attach HE data") and not df.empty:
+            # if not st.session_state.get("authenticated") and df.index.size > unauthorized_limit:
+            #     st.warning(
+            #         f"You are not authorized to perform such large query, continuing with top {unauthorized_limit} rows")
+            #     df = df.head(unauthorized_limit)
+            df_spl = hive_engine_balances.prepare_date(df)
+            st.session_state.attached_query_results = df_spl
+            st.rerun()
+
 
     if st.session_state.query_results is not None:
         df = st.session_state.query_results
         params = st.session_state.params
         query_remark.add_section(df.index.size, params)
 
-        if st.session_state.spl_query_results is not None:
-            df_spl = st.session_state.spl_query_results
-            st.dataframe(df_spl)
-        else:
-            st.dataframe(df)
+        if st.session_state.attached_query_results is not None:
+            df = st.session_state.attached_query_results
+
+        st.dataframe(df)
 
     if st.session_state.query_results is not None:
         df = st.session_state.query_results
-    if st.session_state.spl_query_results is not None:
-        df = st.session_state.spl_query_results
+    if st.session_state.attached_query_results is not None:
+        df = st.session_state.attached_query_results
 
     if not df.empty:
         preset_params = presets_section.get_preset_section(df)

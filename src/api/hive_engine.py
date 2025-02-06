@@ -10,8 +10,8 @@ from src.api import hive_node
 # hive-engine nodes see https://beacon.peakd.com/
 hive_engine_nodes = [
     'https://api2.hive-engine.com/rpc/',
-    'https://api.hive-engine.com/rpc/',
-    # 'https://engine.rishipanthee.com/', # is preferred
+    # 'https://api.hive-engine.com/rpc/', # is preferred as firs attempt
+    'https://engine.rishipanthee.com/', # is preferred
     'https://herpc.dtools.dev/',
     'https://engine.deathwing.me/',
     'https://ha.herpc.dtools.dev/',

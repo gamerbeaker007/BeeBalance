@@ -13,15 +13,22 @@ db_username = st.secrets["database"]["username"]
 db_password = st.secrets["database"]["password"]
 
 # Connection string using secrets
-connection_string = (
-    f"Driver={{ODBC Driver 17 for SQL Server}};"
-    f"Server=vip.hivesql.io;"
-    f"Database=DBHive;"
-    f"UID={db_username};"
-    f"PWD={db_password};"
-    f"TrustServerCertificate=yes;"
-    f"Encrypt=yes"
-)
+driver_names = [f"ODBC Driver {x} for SQL Server" for x in [17, 18]]
+for driver_name in driver_names:
+    connection_string = (
+        f"Driver={driver_name};"
+        f"Server=vip.hivesql.io;"
+        f"Database=DBHive;"
+        f"UID={db_username};"
+        f"PWD={db_password};"
+        f"TrustServerCertificate=yes;"
+        f"Encrypt=yes"
+    )
+    try:
+        connection = pypyodbc.connect(connection_string)
+        connection.close()
+    except pypyodbc.Error:
+        continue
 
 
 def execute_query_df(query, params=None):

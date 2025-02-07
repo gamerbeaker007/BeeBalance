@@ -11,7 +11,7 @@ def determine_label(row):
 
 
 def add(df):
-    df = df.fillna(0)
+    df = df.fillna(0).infer_objects(copy=False)
 
     # Create a Plotly scatter plot
     fig = go.Figure()

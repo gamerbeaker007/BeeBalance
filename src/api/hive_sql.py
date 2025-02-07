@@ -89,7 +89,7 @@ def get_hive_balances(account_names):
     df = pd.DataFrame()
 
     # Process account names in batches
-    for batch in batch_list(account_names, batch_size=5):
+    for batch in batch_list(account_names, batch_size=500):
         # Create the placeholders for the IN clause
         placeholders = ', '.join(['?'] * len(batch))
 

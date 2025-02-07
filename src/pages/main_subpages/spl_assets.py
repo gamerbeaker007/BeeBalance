@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from src.api import spl
@@ -10,54 +11,55 @@ extra_columns = [
 ]
 
 
-def add_assets(row, placeholder):
+def add_assets(row):
     """
     Add assets (collection power and deeds) to a player's row.
 
     :param row: A row from a DataFrame.
-    :param placeholder: Streamlit placeholder to display status messages.
-    :return: A modified row with added asset values.
+    :return: A DataFrame containing the modified row.
     """
-    placeholder.text(f"Loading SPL Balances for account: {row['name']}")
-
-    # Ensure we modify a copy of row
-    row = row.copy()
-
     # Fetch player card collection and calculate collection power
     player_card_collection = spl.get_player_collection_df(row["name"])
-    if not player_card_collection.empty:
-        row["collection_power"] = player_card_collection["collection_power"].sum()
-    else:
-        row["collection_power"] = 0  # Default value if empty
+    row = row.copy()  # Ensure modification does not affect cached data
+
+    row["collection_power"] = player_card_collection[
+        "collection_power"].sum() if not player_card_collection.empty else 0
 
     # Fetch player deeds collection and count
     player_deeds = spl.get_deeds_collection(row["name"])
-    if not player_deeds.empty:
-        row["deeds"] = len(player_deeds)
-    else:
-        row["deeds"] = 0  # Default value if empty
+    row["deeds"] = len(player_deeds) if not player_deeds.empty else 0
 
-    return row
+    return pd.DataFrame([row])  # Always return as DataFrame for easy concatenation
 
 
 def prepare_data(df):
-    loading_placeholder = st.empty()
+    """
+    Process each player's data, adding asset information.
+    Uses a Streamlit status update for user feedback.
+    """
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading SPL Assets...', expanded=True) as status:
+            processed_rows = []  # List to store processed rows
 
-    with st.spinner('Loading data... Please wait.'):
-        spl_assets = df.apply(lambda row: add_assets(row, loading_placeholder), axis=1)
+            for index, row in df.iterrows():
+                status.update(label=f"Fetching assets for: {row['name']}...", state="running")
 
-    loading_placeholder.empty()
+                updated_row = add_assets(row)  # Process row
+                processed_rows.append(updated_row)  # Append result
 
-    return spl_assets
+                status.update(label=f"Completed {row['name']}", state="complete")
+
+            # Combine processed rows into a DataFrame
+            result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
+    empty_space.empty()
+
+    return result_df
 
 
 def get_page(df):
     st.title('Splinterlands Assets')
-
     add_cards(df)
-
-    with st.expander("Hive + SPL data", expanded=False):
-        st.dataframe(df, hide_index=True)
 
 
 def add_cards(spl_assets):

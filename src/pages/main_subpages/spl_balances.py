@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from src.api import spl
@@ -19,49 +20,60 @@ token_columns = [
     ]
 
 
-def add_token_balances(row, placeholder):
-    placeholder.text(f"Loading SPL Balances for account: {row['name']}")
-
-    # Specify tokens to filter
-
+def add_token_balances(row):
+    """
+    Fetch and process SPL balances for a given player row.
+    Returns a DataFrame containing the updated balance information.
+    """
     spl_balances = spl.get_balances(row["name"], filter_tokens=token_columns)
 
-    # Pivot the balances DataFrame
     if spl_balances.empty:
-        # Return the original row if no balances are found
-        return row
+        return pd.DataFrame([row])  # Ensure we return a DataFrame, not a Series
 
-    pivoted_df = spl_balances.pivot(index="player", columns="token", values="balance")
+    # Pivot balances for each token
+    pivoted_df = spl_balances.pivot(index="player", columns="token", values="balance").reset_index()
 
-    # Convert the row to a single-row DataFrame for merging
-    row_df = row.to_frame().T
-    merged_row = row_df.merge(pivoted_df, left_on="name", right_on="player", how="left")
+    # Convert the row to a DataFrame
+    row_df = pd.DataFrame([row])
 
-    # Reorder the columns to ensure original columns are followed by the new ones
-    for col in pivoted_df.columns:
-        if col not in row_df.columns:
-            row_df[col] = pivoted_df[col].iloc[0] if col in pivoted_df.columns else 0
+    # Merge token balances with the original row
+    merged_row = row_df.merge(pivoted_df, left_on="name", right_on="player", how="left").drop(columns=["player"])
 
-    return row_df.iloc[0]  # Return as a Series
-
-
-def prepare_date(df):
-    # Create a dynamic placeholder for loading text
-    loading_placeholder = st.empty()
-
-    with st.spinner('Loading data... Please wait.'):
-        # Use a custom merge to ensure column order is preserved
-        sps_balances = df.apply(lambda row: add_token_balances(row, loading_placeholder), axis=1)
-
-    loading_placeholder.empty()
-
+    # Ensure all expected token columns exist
     for col in token_columns:
-        if col not in sps_balances.columns:
-            sps_balances[col] = 0
+        if col not in merged_row.columns:
+            merged_row[col] = 0  # Default missing tokens to 0
 
-    # Ensure original columns appear first
-    sps_balances = sps_balances[list(df.columns) + token_columns]
-    return sps_balances
+    return merged_row
+
+
+def prepare_data(df):
+    """
+    Process all rows in df by fetching SPL balances and updating token columns.
+    Uses Streamlit's status update for user feedback.
+    """
+
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading SPL Balances...', expanded=True) as status:
+            processed_rows = []  # List to store processed rows
+
+            for index, row in df.iterrows():
+                status.update(label=f"Fetching balances for: {row['name']}...", state="running")
+
+                updated_row = add_token_balances(row)  # Process each row
+                processed_rows.append(updated_row)  # Append processed row
+
+                status.update(label=f"Completed {row['name']}", state="complete")
+
+            # Combine processed rows into a DataFrame
+            if processed_rows:
+                result_df = pd.concat(processed_rows, ignore_index=True)
+            else:
+                result_df = pd.DataFrame(columns=df.columns)  # Return an empty DataFrame if no data
+    empty_space.empty()
+
+    return result_df
 
 
 def get_page(df):

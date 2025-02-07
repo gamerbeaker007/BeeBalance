@@ -22,7 +22,7 @@ def analyse_accounts(accounts, sps_balances=None):
         df = df.merge(sps_balances, left_on="name", right_on="player", how="left")
         df = df.drop(['player'], axis=1)
     else:
-        df = spl_balances.prepare_date(df)
+        df = spl_balances.prepare_data(df)
     return df
 
 

@@ -1,5 +1,6 @@
 import logging
 
+import pandas as pd
 import streamlit as st
 
 from src.api import spl, peakmonsters
@@ -8,27 +9,6 @@ from src.util import spl_util
 from src.util.card import create_card
 
 log = logging.getLogger('SPL Estimates')
-
-
-def add_estimations(row, list_prices_df, market_prices_df, placeholder):
-    account_name = row['name']
-    if not spl.player_exist(account_name):
-        log.info(f'Not a splinterlands account skip {account_name}')
-        return row
-
-    estimates = spl_util.get_portfolio_value(account_name, list_prices_df, market_prices_df, placeholder)
-    if estimates.empty:
-        return row
-
-    row = row.copy()
-    for col in estimates.columns:
-        if col in row.index:
-            # Add the value if the column exists in the row
-            row[col] += estimates[col].iloc[0]
-        else:
-            # Add the column to the row if it doesn't exist
-            row[col] = estimates[col].iloc[0]
-    return row
 
 
 def get_collection_card(df):
@@ -152,32 +132,76 @@ def get_other_values_card(df):
     )
 
 
+def add_estimations(row, list_prices_df, market_prices_df):
+    """
+    Add estimated portfolio value to a player's row based on market data.
+    Returns a DataFrame containing the updated row.
+    """
+    account_name = row['name']
+
+    if not spl.player_exist(account_name):
+        log.info(f'Not a Splinterlands account, skipping {account_name}')
+        return pd.DataFrame([row])  # Ensure function always returns a DataFrame
+
+    # Fetch portfolio estimates
+    estimates = spl_util.get_portfolio_value(account_name, list_prices_df, market_prices_df)
+
+    if estimates.empty:
+        return pd.DataFrame([row])
+
+    row = row.copy()  # Ensure modification does not affect cached data
+
+    for col in estimates.columns:
+        if col in row.index:
+            row[col] += estimates[col].iloc[0]  # Add value if column exists
+        else:
+            row[col] = estimates[col].iloc[0]  # Add new column if missing
+
+    return pd.DataFrame([row])  # Return as DataFrame for easy concatenation
+
+
 def prepare_data(df, max_number_of_accounts):
+    """
+    Process all accounts by adding estimated values based on market prices.
+    Uses Streamlit status updates for real-time feedback.
+    """
     if df.index.size > max_number_of_accounts:
-        return df
+        return df  # Return unchanged if too many accounts
 
-    loading_placeholder = st.empty()
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading SPL Estimates...', expanded=True) as status:
+            # Store the current column order
+            initial_columns = df.columns.tolist()
 
-    # Store the current column order
-    initial_columns = df.columns.tolist()
+            # Fetch market data **before** iterating over accounts
+            status.update(label="Fetching market data...", state="running")
+            list_prices_df = spl.get_all_cards_for_sale_df()
+            market_prices_df = peakmonsters.get_market_prices_df()
+            status.update(label="Market data loaded!", state="complete")
 
-    with st.spinner('Loading data... Please wait.'):
-        list_prices_df = spl.get_all_cards_for_sale_df()
-        market_prices_df = peakmonsters.get_market_prices_df()
+            processed_rows = []  # Store processed data
 
-        spl_estimates = df.apply(lambda row:
-                                 add_estimations(row,
-                                                 list_prices_df,
-                                                 market_prices_df,
-                                                 loading_placeholder), axis=1)
+            # Iterate over each row while updating progress
+            for index, row in df.iterrows():
+                status.update(label=f"Processing estimations for: {row['name']}...", state="running")
 
-        # Reorder columns: put initial columns first, followed by any new columns
-        new_columns = [col for col in spl_estimates.columns if col not in initial_columns]
-        reordered_columns = initial_columns + new_columns
-        spl_estimates = spl_estimates[reordered_columns]
+                updated_row = add_estimations(row, list_prices_df, market_prices_df)  # Process row
+                processed_rows.append(updated_row)
 
-    loading_placeholder.empty()
-    return spl_estimates
+                status.update(label=f"Completed {row['name']}", state="complete")
+
+            # Combine processed rows into a DataFrame
+            result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
+
+            # Reorder columns: original columns first, then new ones
+            new_columns = [col for col in result_df.columns if col not in initial_columns]
+            result_df = result_df[initial_columns + new_columns]
+
+            status.update(label="All estimations completed!", state="complete")
+    empty_space.empty()
+
+    return result_df
 
 
 def get_page(df, max_number_of_accounts):
@@ -208,8 +232,5 @@ def get_page(df, max_number_of_accounts):
         with col4:
             st.markdown(sps_card, unsafe_allow_html=True)
             st.markdown(credits_card, unsafe_allow_html=True)
-
-        with st.expander("Estimated value data", expanded=False):
-            st.dataframe(df, hide_index=True)
     else:
-        st.write(f'Skip SPL estimate more then {max_number_of_accounts} accounts requested')
+        st.write(f'Skipped SPL estimate more then {max_number_of_accounts} accounts requested')

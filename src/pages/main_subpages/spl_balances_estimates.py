@@ -168,36 +168,38 @@ def prepare_data(df, max_number_of_accounts):
     if df.index.size > max_number_of_accounts:
         return df  # Return unchanged if too many accounts
 
-    status = st.status("Loading market data...", expanded=True)
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading SPL Estimates...', expanded=True) as status:
+            # Store the current column order
+            initial_columns = df.columns.tolist()
 
-    # Store the current column order
-    initial_columns = df.columns.tolist()
+            # Fetch market data **before** iterating over accounts
+            status.update(label="Fetching market data...", state="running")
+            list_prices_df = spl.get_all_cards_for_sale_df()
+            market_prices_df = peakmonsters.get_market_prices_df()
+            status.update(label="Market data loaded!", state="complete")
 
-    # Fetch market data **before** iterating over accounts
-    status.update(label="Fetching market data...", state="running")
-    list_prices_df = spl.get_all_cards_for_sale_df()
-    market_prices_df = peakmonsters.get_market_prices_df()
-    status.update(label="Market data loaded!", state="complete")
+            processed_rows = []  # Store processed data
 
-    processed_rows = []  # Store processed data
+            # Iterate over each row while updating progress
+            for index, row in df.iterrows():
+                status.update(label=f"Processing estimations for: {row['name']}...", state="running")
 
-    # Iterate over each row while updating progress
-    for index, row in df.iterrows():
-        status.update(label=f"Processing estimations for: {row['name']}...", state="running")
+                updated_row = add_estimations(row, list_prices_df, market_prices_df)  # Process row
+                processed_rows.append(updated_row)
 
-        updated_row = add_estimations(row, list_prices_df, market_prices_df)  # Process row
-        processed_rows.append(updated_row)
+                status.update(label=f"Completed {row['name']}", state="complete")
 
-        status.update(label=f"Completed {row['name']}", state="complete")
+            # Combine processed rows into a DataFrame
+            result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
 
-    # Combine processed rows into a DataFrame
-    result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
+            # Reorder columns: original columns first, then new ones
+            new_columns = [col for col in result_df.columns if col not in initial_columns]
+            result_df = result_df[initial_columns + new_columns]
 
-    # Reorder columns: original columns first, then new ones
-    new_columns = [col for col in result_df.columns if col not in initial_columns]
-    result_df = result_df[initial_columns + new_columns]
-
-    status.update(label="All estimations completed!", state="complete")
+            status.update(label="All estimations completed!", state="complete")
+    empty_space.empty()
 
     return result_df
 
@@ -230,8 +232,5 @@ def get_page(df, max_number_of_accounts):
         with col4:
             st.markdown(sps_card, unsafe_allow_html=True)
             st.markdown(credits_card, unsafe_allow_html=True)
-
-        with st.expander("Estimated value data", expanded=False):
-            st.dataframe(df, hide_index=True)
     else:
-        st.write(f'Skip SPL estimate more then {max_number_of_accounts} accounts requested')
+        st.write(f'Skipped SPL estimate more then {max_number_of_accounts} accounts requested')

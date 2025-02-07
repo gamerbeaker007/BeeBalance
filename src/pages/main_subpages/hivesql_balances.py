@@ -23,7 +23,14 @@ def determine_emoji(ratio):
 
 
 def prepare_data(account_names):
-    return hive_sql.get_hive_balances(account_names)
+
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading Hive Balances...', expanded=True) as status:
+            df = hive_sql.get_hive_balances(account_names)
+    empty_space.empty()
+
+    return df
 
 
 def get_page(df):

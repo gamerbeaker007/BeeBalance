@@ -49,31 +49,35 @@ def prepare_data(df):
     Process all rows in df by fetching Hive Engine token balances.
     Uses a Streamlit status update for real-time user feedback.
     """
-    status = st.status("Loading Hive Engine Balances...", expanded=True)
 
-    processed_rows = []  # Store processed rows
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading Hive Engine Balances...', expanded=True) as status:
+            processed_rows = []  # Store processed rows
 
-    for index, row in df.iterrows():
-        status.update(label=f"Fetching balances for: {row['name']}...", state="running")
+            for index, row in df.iterrows():
+                status.update(label=f"Fetching balances for: {row['name']}...", state="running")
 
-        updated_row = add_token_balances(row)  # Process row
-        processed_rows.append(updated_row)  # Append result
+                updated_row = add_token_balances(row)  # Process row
+                processed_rows.append(updated_row)  # Append result
 
-        status.update(label=f"Completed {row['name']}", state="complete")
+                status.update(label=f"Completed {row['name']}", state="complete")
 
-    # Combine processed rows into a DataFrame
-    result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
+            # Combine processed rows into a DataFrame
+            result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(
+                columns=df.columns)
 
-    status.update(label="All Hive Engine balances loaded!", state="complete")
+            # Get original columns
+            orig = df.columns.tolist()
 
-    # Get original columns
-    orig = df.columns.tolist()
+            # Identify new columns
+            new_cols = [col for col in result_df.columns if col not in orig]
 
-    # Identify new columns
-    new_cols = [col for col in result_df.columns if col not in orig]
+            # Ensure column order: original columns first, then new ones
+            result =  result_df[orig + new_cols]
+    empty_space.empty()
+    return result
 
-    # Ensure column order: original columns first, then new ones
-    return result_df[orig + new_cols]
 
 def get_page(df):
     st.title("Hive Engine Token Overview")

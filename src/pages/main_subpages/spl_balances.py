@@ -52,25 +52,26 @@ def prepare_data(df):
     Process all rows in df by fetching SPL balances and updating token columns.
     Uses Streamlit's status update for user feedback.
     """
-    status = st.status("Loading SPL Balances...", expanded=True)
 
-    processed_rows = []  # List to store processed rows
+    empty_space = st.empty()
+    with empty_space.container():
+        with st.status('Loading SPL Balances...', expanded=True) as status:
+            processed_rows = []  # List to store processed rows
 
-    for index, row in df.iterrows():
-        status.update(label=f"Fetching balances for: {row['name']}...", state="running")
+            for index, row in df.iterrows():
+                status.update(label=f"Fetching balances for: {row['name']}...", state="running")
 
-        updated_row = add_token_balances(row)  # Process each row
-        processed_rows.append(updated_row)  # Append processed row
+                updated_row = add_token_balances(row)  # Process each row
+                processed_rows.append(updated_row)  # Append processed row
 
-        status.update(label=f"Completed {row['name']}", state="complete")
+                status.update(label=f"Completed {row['name']}", state="complete")
 
-    # Combine processed rows into a DataFrame
-    if processed_rows:
-        result_df = pd.concat(processed_rows, ignore_index=True)
-    else:
-        result_df = pd.DataFrame(columns=df.columns)  # Return an empty DataFrame if no data
-
-    status.update(label="All balances loaded!", state="complete")
+            # Combine processed rows into a DataFrame
+            if processed_rows:
+                result_df = pd.concat(processed_rows, ignore_index=True)
+            else:
+                result_df = pd.DataFrame(columns=df.columns)  # Return an empty DataFrame if no data
+    empty_space.empty()
 
     return result_df
 

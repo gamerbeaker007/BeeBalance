@@ -34,12 +34,11 @@ def get_page():
                 st.session_state.hive_data = None  # Reset Hive data
                 st.session_state.spl_data = None  # Reset SPL data
 
-            log.info(f'Analyzing account(s): {account_names}')
-
             title = ''
             # **Fetch Hive and Hive Engine Data (if not already loaded)**
             st.markdown(card_style, unsafe_allow_html=True)
             if st.session_state.hive_data is None:
+                log.info(f'Analyzing account(s): {account_names}')
                 df = hivesql_balances.prepare_data(account_names)
 
                 if not df.empty:

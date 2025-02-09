@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def add_section(num_accounts, params):
     st.write(f"We found {num_accounts} accounts matching the specified criteria.")
 

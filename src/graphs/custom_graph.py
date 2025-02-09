@@ -28,7 +28,11 @@ def get_page(df,
     # Sidebar options
     st.sidebar.header("Graph Settings")
 
-    x_axis = st.sidebar.selectbox("Select X-axis", df.columns, index=df.columns.get_loc(x_axis) if x_axis in df.columns else 0)
+    x_axis = st.sidebar.selectbox(
+        "Select X-axis",
+        df.columns,
+        index=df.columns.get_loc(x_axis) if x_axis in df.columns else 0
+    )
 
     if y_axes:
         default = [y for y in y_axes if y in df.columns]
@@ -61,7 +65,7 @@ def get_page(df,
             "Select Range", min_value=int(min_val),
             max_value=min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE),
             value=[int(filter_range[0]), int(filter_range[1])] if filter_range else (
-            int(min_val), min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE)),
+                int(min_val), min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE)),
             step=1
         )
         df = df[(df[filter_column] >= filter_range[0]) & (df[filter_column] <= filter_range[1])].reset_index(drop=True)
@@ -74,7 +78,8 @@ def get_page(df,
 
     color_mode_columns = None
     if enable_color_mode:
-        color_mode_columns = st.sidebar.selectbox("Select Color Mode Column", df.select_dtypes(exclude=[np.number]).columns, index=0)
+        color_mode_columns = st.sidebar.selectbox("Select Color Mode Column",
+                                                  df.select_dtypes(exclude=[np.number]).columns, index=0)
 
     if plot_colors is None:
         plot_colors = {}

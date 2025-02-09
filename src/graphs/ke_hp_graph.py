@@ -74,7 +74,6 @@ def add(df):
         )
     )
 
-
     fig.update_layout(
         title="HP vs KE Ratio & Total Rewards",
         yaxis=dict(

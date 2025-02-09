@@ -6,7 +6,7 @@ import pytest
 # Mock Streamlit functions for testing
 import streamlit as st
 
-from src.pages.custom_queries_subpages.upload_section import MAX_FILE_SIZE, detect_encoding, sanitize_csv, \
+from src.pages.custom_queries_subpages.upload_section import detect_encoding, sanitize_csv, \
     get_import_section
 
 # Simulated CSV files with different encodings and issues

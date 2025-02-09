@@ -3,7 +3,7 @@ import streamlit as st
 
 from src.api import hive_engine
 
-filter_symbols =[
+filter_symbols = [
     'DEC',
     'LEO',
     'SPS',
@@ -74,7 +74,7 @@ def prepare_data(df):
             new_cols = [col for col in result_df.columns if col not in orig]
 
             # Ensure column order: original columns first, then new ones
-            result =  result_df[orig + new_cols]
+            result = result_df[orig + new_cols]
     empty_space.empty()
     return result
 

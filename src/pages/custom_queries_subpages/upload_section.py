@@ -43,7 +43,7 @@ def get_import_section():
 
                 df = pd.read_csv(uploaded_file, encoding=encoding)
                 df = sanitize_csv(df)  # Sanitize only string columns
-        
+
                 if df.empty:
                     st.error("❌ The uploaded file is empty. Please upload a valid CSV.")
                 else:

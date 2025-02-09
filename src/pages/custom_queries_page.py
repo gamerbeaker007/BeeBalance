@@ -14,6 +14,7 @@ query_options = {
     "comments": ("comments", 10),
 }
 
+
 def get_page():
 
     col1, _, col2 = st.columns([1, 1, 1])
@@ -60,21 +61,17 @@ def get_page():
         if st.button("Attach SPL data") and not df.empty:
             if not st.session_state.get("authenticated") and df.index.size > unauthorized_limit:
                 st.warning(
-                    f"You are not authorized to perform such large query, continuing with top {unauthorized_limit} rows")
+                    f"You are not authorized to perform such large query, "
+                    f"continuing with top {unauthorized_limit} rows")
                 df = df.head(unauthorized_limit)
             df_spl = spl_balances.prepare_data(df)
             st.session_state.attached_query_results = df_spl
             st.rerun()
 
         if st.button("Attach HE data") and not df.empty:
-            # if not st.session_state.get("authenticated") and df.index.size > unauthorized_limit:
-            #     st.warning(
-            #         f"You are not authorized to perform such large query, continuing with top {unauthorized_limit} rows")
-            #     df = df.head(unauthorized_limit)
             df_spl = hive_engine_balances.prepare_data(df)
             st.session_state.attached_query_results = df_spl
             st.rerun()
-
 
     if st.session_state.query_results is not None:
         df = st.session_state.query_results

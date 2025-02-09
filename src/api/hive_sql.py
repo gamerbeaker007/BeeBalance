@@ -204,7 +204,7 @@ def get_hive_balances_params(params):
     reputation_max = score_to_reputation(params['reputation_max'])
 
     query = f"""
-        SELECT 
+        SELECT
             a.name,
             CAST (a.balance AS float) AS hive,
             CAST (a.savings_balance AS float) AS hive_savings,
@@ -217,13 +217,13 @@ def get_hive_balances_params(params):
             CAST (a.curation_rewards AS float) / 1000.0 AS curation_rewards,
             CAST (a.posting_rewards AS float) / 1000.0 AS posting_rewards,
             COUNT(c.permlink) AS comment_count
-        FROM 
+        FROM
             Accounts a
-        JOIN 
+        JOIN
             Comments c
-        ON 
+        ON
             a.name = c.author
-        WHERE 
+        WHERE
             a.posting_rewards > {params['posting_rewards_min']}
             AND a.posting_rewards < {params['posting_rewards_max']}
             AND a.vesting_shares > {vesting_shares_min}
@@ -232,7 +232,7 @@ def get_hive_balances_params(params):
             AND a.reputation < {reputation_max}
 
             AND c.created >= DATEADD(MONTH, -{params['months']}, GETDATE())
-        GROUP BY 
+        GROUP BY
             a.name,
             a.balance,
             a.savings_balance,
@@ -244,7 +244,7 @@ def get_hive_balances_params(params):
             a.received_vesting_shares,
             a.curation_rewards,
             a.posting_rewards
-        HAVING 
+        HAVING
             COUNT(c.permlink) > {params['comments']};
     """
 
@@ -265,9 +265,9 @@ def get_commentators(permlinks):
     placeholders = ', '.join(['?'] * len(permlinks))
 
     query = f"""
-        SELECT DISTINCT author 
-        FROM comments 
-        WHERE parent_permlink IN ({placeholders})   
+        SELECT DISTINCT author
+        FROM comments
+        WHERE parent_permlink IN ({placeholders})
         AND depth = 1
     """
     df = execute_query_df(query, permlinks)
@@ -276,8 +276,8 @@ def get_commentators(permlinks):
 
 def get_top_posting_rewards(number, minimal_posting_rewards):
     query = f"""
-        SELECT TOP {number} name, posting_rewards 
-        FROM accounts 
+        SELECT TOP {number} name, posting_rewards
+        FROM accounts
         WHERE posting_rewards > {minimal_posting_rewards}
         ORDER BY posting_rewards DESC
     """
@@ -288,22 +288,22 @@ def get_top_posting_rewards(number, minimal_posting_rewards):
 
 def get_active_hiver_users(posting_rewards, comments, months):
     query = f"""
-            SELECT 
+            SELECT
                 a.name,
                 a.posting_rewards,
                 COUNT(c.permlink) AS comment_count
-            FROM 
+            FROM
                 Accounts a
-            JOIN 
+            JOIN
                 Comments c
-            ON 
+            ON
                 a.name = c.author
-            WHERE 
+            WHERE
                 a.posting_rewards > {posting_rewards}
                 AND c.created >= DATEADD(MONTH, -{months}, GETDATE())
-            GROUP BY 
+            GROUP BY
                 a.name, a.posting_rewards
-            HAVING 
+            HAVING
                 COUNT(c.permlink) > {comments};
     """
     return execute_query_df(query)

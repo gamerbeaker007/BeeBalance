@@ -11,7 +11,7 @@ from src.api import hive_node
 hive_engine_nodes = [
     'https://api2.hive-engine.com/rpc/',
     # 'https://api.hive-engine.com/rpc/', # is preferred as firs attempt
-    'https://engine.rishipanthee.com/', # is preferred
+    'https://engine.rishipanthee.com/',  # is preferred
     'https://herpc.dtools.dev/',
     'https://engine.deathwing.me/',
     'https://ha.herpc.dtools.dev/',
@@ -58,8 +58,8 @@ def find_one_with_retry(contract_name, table_name, query):
         result = api.find_one(contract_name=contract_name, table_name=table_name, query=query)
         success = True
     except Exception as e:
-        logging.warning('find_one_with_retry (' + type(e).__name__ + ') preferred  node: ' + hive_node.PREFERRED_NODE +
-                        '. Continue try on other nodes')
+        logging.warning('find_one_with_retry (' + type(e).__name__ + ') preferred  node: ' + hive_node.PREFERRED_NODE
+                        + '. Continue try on other nodes')
         for iter_ in range(iterations):
             for node in hive_engine_nodes:
                 # noinspection PyBroadException
@@ -78,12 +78,15 @@ def find_one_with_retry(contract_name, table_name, query):
                 break
 
     if not success:
-        raise Exception('find_one_with_retry failed 5 times over all nodes'
-                        ' contract:' + str(contract_name) +
-                        ' table_name:' + str(table_name) +
-                        ' query:' + str(query) +
-                        ' stop update .....')
+        raise Exception(
+            'find_one_with_retry failed 5 times over all nodes'
+            + ' contract:' + str(contract_name)
+            + ' table_name:' + str(table_name)
+            + ' query:' + str(query)
+            + ' stop update .....'
+        )
     return result
+
 
 def find_with_retry(contract_name, table_name, query):
     result = None
@@ -98,8 +101,8 @@ def find_with_retry(contract_name, table_name, query):
         result = api.find(contract_name=contract_name, table_name=table_name, query=query)
         success = True
     except Exception as e:
-        logging.warning('find_one_with_retry (' + type(e).__name__ + ') preferred  node: ' + hive_node.PREFERRED_NODE +
-                        '. Continue try on other nodes')
+        logging.warning('find_one_with_retry (' + type(e).__name__ + ') preferred  node: ' + hive_node.PREFERRED_NODE
+                        + '. Continue try on other nodes')
         for iter_ in range(iterations):
             for node in hive_engine_nodes:
                 # noinspection PyBroadException
@@ -118,11 +121,13 @@ def find_with_retry(contract_name, table_name, query):
                 break
 
     if not success:
-        raise Exception('find_one_with_retry failed 5 times over all nodes'
-                        ' contract:' + str(contract_name) +
-                        ' table_name:' + str(table_name) +
-                        ' query:' + str(query) +
-                        ' stop update .....')
+        raise Exception(
+            'find_one_with_retry failed 5 times over all nodes'
+            + ' contract:' + str(contract_name)
+            + ' table_name:' + str(table_name)
+            + ' query:' + str(query)
+            + ' stop update .....'
+        )
     return result
 
 
@@ -133,6 +138,7 @@ def get_market_with_retry(token):
         return market[0]
     else:
         return None
+
 
 @st.cache_data(ttl="1h")
 def get_account_balances(account_name, filter_symbols=None):

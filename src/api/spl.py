@@ -16,7 +16,7 @@ retry_strategy = LogRetry(
     status_forcelist=[429, 500, 502, 503, 504],
     backoff_factor=2,  # wait will be [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
     allowed_methods=['HEAD', 'GET', 'OPTIONS'],
-    logger_name = "SPL Retry"
+    logger_name="SPL Retry"
 )
 adapter = HTTPAdapter(max_retries=retry_strategy)
 http = requests.Session()
@@ -39,7 +39,8 @@ def get_player_collection_df(username):
 
     if not df.empty:
         return df[
-            ['player', 'uid', 'card_detail_id', 'collection_power', 'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']]
+            ['player', 'uid', 'card_detail_id', 'collection_power',
+             'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']]
 
     return df  # Returns empty DataFrame if no data
 
@@ -118,7 +119,7 @@ def get_staked_dec_df(account_name):
     """
     Fetch staked DEC for land.
     """
-    return fetch_api_data(f'{land_url}land/stake/decstaked', params= {'player': account_name}, data_key='data')
+    return fetch_api_data(f'{land_url}land/stake/decstaked', params={'player': account_name}, data_key='data')
 
 
 @st.cache_data(ttl="1h")
@@ -155,7 +156,8 @@ def get_owned_resource_sum(account, resource):
     Fetch the total owned amount of a specific resource for a player.
     Returns the sum of the "amount" column.
     """
-    df = fetch_api_data(f'{land_url}land/resources/owned', params={'player': account, 'resource': resource}, data_key='data')
+    df = fetch_api_data(f'{land_url}land/resources/owned', params={'player': account, 'resource': resource},
+                        data_key='data')
     return df['amount'].sum() if 'amount' in df.columns else 0  # Return 0 instead of None if missing
 
 

@@ -12,16 +12,33 @@ log = logging.getLogger("Hive SQL")
 db_username = st.secrets["database"]["username"]
 db_password = st.secrets["database"]["password"]
 
-# Connection string using secrets
-connection_string = (
-    f"Driver={{ODBC Driver 17 for SQL Server}};"
-    f"Server=vip.hivesql.io;"
-    f"Database=DBHive;"
-    f"UID={db_username};"
-    f"PWD={db_password};"
-    f"TrustServerCertificate=yes;"
-    f"Encrypt=yes"
-)
+
+def find_valid_connection_string():
+    # Connection string using secrets
+    driver_names = [f"ODBC Driver {x} for SQL Server" for x in [17, 18]]
+    for driver_name in driver_names:
+        connection_string_cand = (
+            f"Driver={driver_name};"
+            f"Server=vip.hivesql.io;"
+            f"Database=DBHive;"
+            f"UID={db_username};"
+            f"PWD={db_password};"
+            f"TrustServerCertificate=yes;"
+            f"Encrypt=yes"
+        )
+        try:
+            log.info(f"Trying driver {driver_name}")
+            connection = pypyodbc.connect(connection_string_cand)
+            connection.close() 
+            log.info(f"Driver {driver_name} successfully connected")
+            return connection_string_cand
+        except pypyodbc.Error as e:
+            log.info(f"Error for driver: {driver_name}. Error message: {e}")
+            continue
+
+
+if 'sql_conn_string' not in st.session_state:
+    st.session_state['sql_conn_string'] = find_valid_connection_string()
 
 
 def execute_query_df(query, params=None):
@@ -37,7 +54,7 @@ def execute_query_df(query, params=None):
     """
     connection = None
     try:
-        connection = pypyodbc.connect(connection_string)
+        connection = pypyodbc.connect(st.session_state['sql_conn_string'])
         cursor = connection.cursor()
 
         if params:

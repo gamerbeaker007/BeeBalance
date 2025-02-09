@@ -7,6 +7,47 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Flake8 Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Run Flake8 (without complexity check failing CI)
+        run: flake8 --ignore=C901
+
+  complexity_check:
+    name: Complexity Warnings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Run Complexity Check (Warnings Only)
+        run: |
+          flake8 --select=C901 || echo "Complexity warnings detected but not failing build"
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -21,14 +62,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest-cov flake8
-
-      - name: Run Flake8 (without complexity check failing CI)
-        run: flake8 --ignore=C901
-
-      - name: Run Complexity Check (Warnings Only)
-        run: |
-          flake8 --select=C901 || echo "Complexity warnings detected but not failing build"
+          pip install pytest-cov
 
       - name: Run Tests and Measure Coverage
         run: pytest

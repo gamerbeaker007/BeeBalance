@@ -33,7 +33,6 @@ def find_valid_connection_string():
             log.info(f"Driver {driver_name} successfully connected")
             return connection_string_cand
         except pypyodbc.Error as e:
-            print(f"Error for driver: {driver_name}. Error message: {e}")
             log.info(f"Error for driver: {driver_name}. Error message: {e}")
             continue
 

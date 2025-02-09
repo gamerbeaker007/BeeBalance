@@ -7,17 +7,17 @@ from src.static import icons
 from src.util.card import create_card
 
 token_columns = [
-        'SPS',
-        'SPSP',
-        'DEC',
-        'DEC-B',
-        'LICENSE',
-        'PLOT',
-        'TRACT',
-        'REGION',
-        'VOUCHER',
-        'CREDITS'
-    ]
+    'SPS',
+    'SPSP',
+    'DEC',
+    'DEC-B',
+    'LICENSE',
+    'PLOT',
+    'TRACT',
+    'REGION',
+    'VOUCHER',
+    'CREDITS'
+]
 
 
 def add_token_balances(row):

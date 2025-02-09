@@ -45,10 +45,10 @@ def get_card_edition_value(account, list_prices_df, market_prices_df):
             collection = get_collection_value(temp_df, list_prices_df, market_prices_df)
             return_df[str(edition.name) + '_market_value'] = collection['market_value']
             return_df[str(edition.name) + '_list_value'] = collection['list_value']
-            return_df[str(edition.name) + '_bcx'] = (player_collection[player_collection.edition ==
-                                                                       edition.value].bcx.sum())
-            return_df[str(edition.name) + '_number_of_cards'] = player_collection[player_collection.edition ==
-                                                                                  edition.value].index.size
+            return_df[str(edition.name) + '_bcx'] = (player_collection[player_collection.edition
+                                                                       == edition.value].bcx.sum())
+            return_df[str(edition.name) + '_number_of_cards'] = player_collection[player_collection.edition
+                                                                                  == edition.value].index.size
 
     return return_df
 
@@ -80,9 +80,9 @@ def get_collection_value(df, list_prices_df, market_prices_df, new=False):
 
             if not list_price and not market_price:
                 details = spl.get_card_details()
-                log.warning("Card '" +
-                            str(details.loc[collection_card['card_detail_id']]['name']) +
-                            "' Not found on the markt (list/market) ignore for collection value")
+                log.warning("Card '"
+                            + str(details.loc[collection_card['card_detail_id']]['name'])
+                            + "' Not found on the markt (list/market) ignore for collection value")
 
     return {
         'list_value': total_list_value,
@@ -109,8 +109,8 @@ def get_market_price(collection_card, market_prices_df, list_price):
 
 
 def find_card(collection_card, market_df):
-    mask = (market_df.card_detail_id == collection_card['card_detail_id']) \
-           & (market_df.gold == collection_card['gold']) \
-           & (market_df.edition == collection_card['edition'])
+    mask = ((market_df.card_detail_id == collection_card['card_detail_id'])
+            & (market_df.gold == collection_card['gold'])
+            & (market_df.edition == collection_card['edition']))
     filtered_df = market_df.loc[mask]
     return filtered_df

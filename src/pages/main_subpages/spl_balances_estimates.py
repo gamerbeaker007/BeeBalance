@@ -81,12 +81,12 @@ def get_credits_card(df):
 def get_land_card(df):
     # Use df.columns to filter column names
     land_columns = df.columns[
-        df.columns.str.startswith("deeds_value") |
-        df.columns.str.startswith("plot_value") |
-        df.columns.str.startswith("tract_value") |
-        df.columns.str.startswith("region_value") |
-        (df.columns.str.startswith("totem") & df.columns.str.endswith("_value"))
-        ]
+        df.columns.str.startswith("deeds_value")
+        | df.columns.str.startswith("plot_value")
+        | df.columns.str.startswith("tract_value")
+        | df.columns.str.startswith("region_value")
+        | (df.columns.str.startswith("totem") & df.columns.str.endswith("_value"))
+    ]
 
     # Sum the filtered columns
     land_value = df[land_columns].sum().sum()  # Sum all rows and columns
@@ -105,21 +105,21 @@ def get_other_values_card(df):
 
     # Exclude columns ending with `_list_value` or `_market_value`
     unused_value_columns = value_columns[
-        ~value_columns.str.endswith('_list_value') &
-        ~value_columns.str.endswith('_market_value') &
-        ~value_columns.str.endswith('dec_value') &
-        ~value_columns.str.endswith('dec_staked_value') &
-        ~value_columns.str.endswith('sps_value') &
-        ~value_columns.str.endswith('spsp_value') &
-        ~value_columns.str.endswith('license_value') &
-        ~value_columns.str.endswith('voucher_value') &
-        ~value_columns.str.endswith('credits_value') &
-        ~value_columns.str.startswith("deeds_value") &
-        ~value_columns.str.startswith("plot_value") &
-        ~value_columns.str.startswith("tract_value") &
-        ~value_columns.str.startswith("region_value") &
-        ~(value_columns.str.startswith("totem") & value_columns.str.endswith("_value"))
-        ]
+        ~value_columns.str.endswith('_list_value')
+        & ~value_columns.str.endswith('_market_value')
+        & ~value_columns.str.endswith('dec_value')
+        & ~value_columns.str.endswith('dec_staked_value')
+        & ~value_columns.str.endswith('sps_value')
+        & ~value_columns.str.endswith('spsp_value')
+        & ~value_columns.str.endswith('license_value')
+        & ~value_columns.str.endswith('voucher_value')
+        & ~value_columns.str.endswith('credits_value')
+        & ~value_columns.str.startswith("deeds_value")
+        & ~value_columns.str.startswith("plot_value")
+        & ~value_columns.str.startswith("tract_value")
+        & ~value_columns.str.startswith("region_value")
+        & ~(value_columns.str.startswith("totem") & value_columns.str.endswith("_value"))
+    ]
 
     # Sum the remaining columns across all rows
     unused_value_total = df[unused_value_columns].sum().sum()

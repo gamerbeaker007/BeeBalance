@@ -35,10 +35,10 @@ def get_deeds_value(account_name):
                 missing_types.append(filter_type)
         if missing_types:
             logging.warning("Not a perfect match found missing filters: " + str(missing_types))
-            logging.warning("Was looking for: \n" +
-                            "\n".join([str(x) + ": " + str(deed[x]) for x in filter_types]))
-            logging.warning("Current estimated best value now: " +
-                            str(df.astype({'listing_price': 'float'}).listing_price.min()))
+            logging.warning("Was looking for: \n"
+                            + "\n".join([str(x) + ": " + str(deed[x]) for x in filter_types]))
+            logging.warning("Current estimated best value now: "
+                            + str(df.astype({'listing_price': 'float'}).listing_price.min()))
         listing_price = df.astype({'listing_price': 'float'}).listing_price.min()
         deeds_price_found += 1
 

@@ -169,7 +169,6 @@ def handle_top_active_authors(posting_reward, comments, months):
 
 def get_page():
     """Main Streamlit page layout and interaction."""
-    col1, col2, col3, col4, _ = st.columns([1, 1, 1, 1, 4])
 
     # Ensure session state key exists
     if "button_clicked" not in st.session_state:
@@ -180,18 +179,7 @@ def get_page():
     comments = 10
     months = 6
 
-    with col1:
-        if st.button(f"TOP {account_limit} HP holders with posting rewards >{posting_reward}"):
-            st.session_state.button_clicked = "top authors"
-
-    with col2:
-        if st.button("Richlist Staked SPS Holders"):
-            st.session_state.button_clicked = "rich list spsp"
-
-    with col3:
-        if st.session_state.get("authenticated"):
-            if st.button("Top active authors"):
-                st.session_state.button_clicked = "top active authors"
+    get_buttons_sections(account_limit, posting_reward)
 
     button_clicked = st.session_state.get("button_clicked")
     if not button_clicked:
@@ -211,3 +199,17 @@ def get_page():
         elif button_clicked == "rich list spsp":
             rich_list = spl.get_spsp_richlist()
             create_page(rich_list.player.to_list(), rich_list)
+
+
+def get_buttons_sections(account_limit, posting_reward):
+    col1, col2, col3, col4, _ = st.columns([1, 1, 1, 1, 4])
+    with col1:
+        if st.button(f"TOP {account_limit} HP holders with posting rewards >{posting_reward}"):
+            st.session_state.button_clicked = "top authors"
+    with col2:
+        if st.button("Richlist Staked SPS Holders"):
+            st.session_state.button_clicked = "rich list spsp"
+    with col3:
+        if st.session_state.get("authenticated"):
+            if st.button("Top active authors"):
+                st.session_state.button_clicked = "top active authors"

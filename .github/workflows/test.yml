@@ -24,29 +24,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8
 
-      - name: Run Flake8 (without complexity check failing CI)
-        run: flake8 --ignore=C901
-
-        # Temporary until the Complexity are solved
-      - name: Run Complexity Check (Warnings Only)
-        id: complexity_check
-        run: |
-          WARNINGS=$(flake8 --select=C901 | tee complexity_warnings.log | wc -l)
-          echo "Number of complexity warnings: $WARNINGS"
-          
-          if [ "$WARNINGS" -gt 0 ]; then
-            echo "Complexity warnings detected but not failing build."
-            
-            # Add a warning message to GitHub Actions summary
-            echo "### ⚠️ Complexity Warnings Detected" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Flake8 found **$WARNINGS** complexity warnings. Please refactor the affected functions!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "#### Affected Files:" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat complexity_warnings.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: Run Flake8
+        run: flake8
 
   test:
     runs-on: ubuntu-latest

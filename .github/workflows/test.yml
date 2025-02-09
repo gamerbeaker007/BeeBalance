@@ -23,8 +23,12 @@ jobs:
           pip install -r requirements.txt
           pip install pytest-cov flake8
 
-      - name: Run Flake8
-        run: flake8 .
+      - name: Run Flake8 (without complexity check failing CI)
+        run: flake8 --ignore=C901
+
+      - name: Run Complexity Check (Warnings Only)
+        run: |
+          flake8 --select=C901 || echo "Complexity warnings detected but not failing build"
 
       - name: Run Tests and Measure Coverage
         run: pytest

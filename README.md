@@ -9,6 +9,13 @@
 ![Complexity Check](https://github.com/gamerbeaker007/BeeBalance/actions/workflows/test.yml/badge.svg?branch=AddFlake8Rules&job=complexity_check)
 
 
+#### Flake8 Linting
+![Flake8 Linting](https://github.com/gamerbeaker007/BeeBalance/actions/workflows/test.yml/badge.svg?branch=main&job=lint)
+
+#### Complexity Check
+![Complexity Warnings](https://img.shields.io/badge/Complexity-Warning-yellow)
+
+
 This repo is intended to give insight in your powered hive to curation rewards ratio
 For the complete reasoning please read this post 
 

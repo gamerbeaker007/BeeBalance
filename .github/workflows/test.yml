@@ -44,10 +44,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8
 
-      - name: Run Complexity Check (Warnings Only)
+      - name: Run Complexity Check
+        id: complexity_check
         run: |
-          flake8 --select=C901 || echo "Complexity warnings detected but not failing build"
+          WARNINGS=$(flake8 --select=C901 | tee complexity_warnings.log | wc -l)
+          echo "Number of complexity warnings: $WARNINGS"
+          echo "Complexity warnings detected: $WARNINGS" >> $GITHUB_STEP_SUMMARY
+          if [ "$WARNINGS" -gt 0 ]; then
+            echo "Flake8 Complexity warnings detected ❌"
+            echo "::set-output name=status::failure"
+          else
+            echo "No complexity warnings ✅"
+            echo "::set-output name=status::success"
+          fi
 
+      - name: Mark Job as Successful but Warn in Logs
+        if: steps.complexity_check.outputs.status == 'failure'
+        run: |
+          echo "Flake8 Complexity warnings detected! Marking as warning instead of failure."
+          exit 0
   test:
     runs-on: ubuntu-latest
     steps:

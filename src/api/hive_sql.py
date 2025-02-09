@@ -14,7 +14,7 @@ db_password = st.secrets["database"]["password"]
 
 
 def find_valid_connection_string():
-    # Connection string using secrets
+    """Finds a valid SQL connection string by testing available ODBC drivers."""
     driver_names = [f"ODBC Driver {x} for SQL Server" for x in [17, 18]]
     for driver_name in driver_names:
         connection_string_cand = (
@@ -29,16 +29,19 @@ def find_valid_connection_string():
         try:
             log.info(f"Trying driver {driver_name}")
             connection = pypyodbc.connect(connection_string_cand)
-            connection.close() 
+            connection.close()
             log.info(f"Driver {driver_name} successfully connected")
             return connection_string_cand
         except pypyodbc.Error as e:
             log.info(f"Error for driver: {driver_name}. Error message: {e}")
             continue
+    return None  # If no valid connection string is found
 
 
-if 'sql_conn_string' not in st.session_state:
-    st.session_state['sql_conn_string'] = find_valid_connection_string()
+@st.cache_resource
+def get_cached_connection_string():
+    """Caches the SQL connection string to avoid redundant computations."""
+    return find_valid_connection_string()
 
 
 def execute_query_df(query, params=None):
@@ -53,8 +56,14 @@ def execute_query_df(query, params=None):
     - pd.DataFrame with query results or an empty DataFrame on failure/no results.
     """
     connection = None
+    conn_string = get_cached_connection_string()
+
+    if conn_string is None:
+        log.error("No valid database connection string found.")
+        return pd.DataFrame()
+
     try:
-        connection = pypyodbc.connect(st.session_state['sql_conn_string'])
+        connection = pypyodbc.connect(conn_string)
         cursor = connection.cursor()
 
         if params:
@@ -79,7 +88,6 @@ def execute_query_df(query, params=None):
     finally:
         if connection:
             connection.close()
-
 
 @lru_cache(maxsize=1)
 def get_hive_per_mvest():

@@ -14,14 +14,15 @@ def group_bcx(df):
     """
     Retrieve dataframe with grouped bxc or unbounded this reduces the time to indentify values
     e.g.:
-    10 Baakjiras of 1 bcx  become 1 row with a count of 10
-    if you have another Baakjira that is 11 bcx that will be other row with count 1 becuase that will reflect in a different price
+    10 Baakjira's of 1 bcx  become 1 row with a count of 10
+    if you have another Baakjira that is 11 bcx that will be other row with count 1,
+     because that will reflect in a different price
 
-    :param df: dataframe with card colletion of a player
+    :param df: dataframe with card collection of a player
     :return: dataframe with grouped bxc or bcx_unbound with a count
     """
-    return df.groupby(['player', 'card_detail_id', 'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']).size().reset_index(name='count')
-
+    return (df.groupby(['player', 'card_detail_id', 'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']).size()
+            .reset_index(name='count'))
 
 
 def get_card_edition_value(account, list_prices_df, market_prices_df):
@@ -44,8 +45,10 @@ def get_card_edition_value(account, list_prices_df, market_prices_df):
             collection = get_collection_value(temp_df, list_prices_df, market_prices_df)
             return_df[str(edition.name) + '_market_value'] = collection['market_value']
             return_df[str(edition.name) + '_list_value'] = collection['list_value']
-            return_df[str(edition.name) + '_bcx'] = player_collection[player_collection.edition == edition.value].bcx.sum()
-            return_df[str(edition.name) + '_number_of_cards'] = player_collection[player_collection.edition == edition.value].index.size
+            return_df[str(edition.name) + '_bcx'] = (player_collection[player_collection.edition ==
+                                                                       edition.value].bcx.sum())
+            return_df[str(edition.name) + '_number_of_cards'] = player_collection[player_collection.edition ==
+                                                                                  edition.value].index.size
 
     return return_df
 
@@ -59,14 +62,12 @@ def is_card_sellable(collection_card):
         return True  # All other editions are always sellable
 
 
-
 def get_collection_value(df, list_prices_df, market_prices_df, new=False):
     total_list_value = 0
     total_market_value = 0
 
     for index, collection_card in df.iterrows():
         bcx = collection_card.bcx * collection_card['count']
-
 
         if is_card_sellable(collection_card):
             list_price = get_list_price(collection_card, list_prices_df)

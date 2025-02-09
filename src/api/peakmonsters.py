@@ -1,8 +1,7 @@
-import logging
-
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
+
 from src.api.logRetry import LogRetry
 
 # Configure retry strategy

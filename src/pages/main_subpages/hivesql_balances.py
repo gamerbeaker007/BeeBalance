@@ -26,7 +26,7 @@ def prepare_data(account_names):
 
     empty_space = st.empty()
     with empty_space.container():
-        with st.status('Loading Hive Balances...', expanded=True) as status:
+        with st.status('Loading Hive Balances...', expanded=True):
             df = hive_sql.get_hive_balances(account_names)
     empty_space.empty()
 

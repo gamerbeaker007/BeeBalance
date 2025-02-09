@@ -21,7 +21,7 @@ def get_page():
     valid = valid_pattern.match(account_names)
 
     if not valid and account_names:
-        st.warning(f'Invalid input character. Should match [a-zA-Z0-9\\- .]')
+        st.warning('Invalid input character. Should match [a-zA-Z0-9\\- .]')
 
     if valid:
         if account_names:

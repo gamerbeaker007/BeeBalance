@@ -192,7 +192,10 @@ def prepare_data(df, max_number_of_accounts):
                 status.update(label=f"Completed {row['name']}", state="complete")
 
             # Combine processed rows into a DataFrame
-            result_df = pd.concat(processed_rows, ignore_index=True) if processed_rows else pd.DataFrame(columns=df.columns)
+            if processed_rows:
+                result_df = pd.concat(processed_rows, ignore_index=True)
+            else:
+                result_df = pd.DataFrame(columns=df.columns)
 
             # Reorder columns: original columns first, then new ones
             new_columns = [col for col in result_df.columns if col not in initial_columns]

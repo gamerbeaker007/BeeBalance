@@ -16,12 +16,14 @@ params = {
     "comments": 5
 }
 
+
 @pytest.fixture
 def mock_streamlit(monkeypatch):
     """Mocks Streamlit functions used in add_section."""
     monkeypatch.setattr(st, "write", MagicMock())
     monkeypatch.setattr(st, "expander", MagicMock(return_value=MagicMock()))
     monkeypatch.setattr(st, "markdown", MagicMock())
+
 
 def test_add_section(mock_streamlit):
     """Tests if add_section correctly calls Streamlit functions."""

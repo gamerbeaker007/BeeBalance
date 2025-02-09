@@ -10,9 +10,10 @@ def get_page():
     st.markdown("""
     Enter permlink to retrieve commentators on a post <br>
     Permlink is the end an url.<br>
-    
+
     e.g.:<br>
-    url: https://peakd.com/hive-13323/@splinterlands/splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm<br>
+    url: https://peakd.com/hive-13323/@splinterlands/"""
+                """splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm<br>
     permlink: splinterlands-community-engagement-challenge-favorite-strategies-sqkhvm
     """, unsafe_allow_html=True)
 

@@ -11,7 +11,7 @@ from src.api import hive_node
 hive_engine_nodes = [
     'https://api2.hive-engine.com/rpc/',
     # 'https://api.hive-engine.com/rpc/', # is preferred as firs attempt
-    'https://engine.rishipanthee.com/', # is preferred
+    'https://engine.rishipanthee.com/',  # is preferred
     'https://herpc.dtools.dev/',
     'https://engine.deathwing.me/',
     'https://ha.herpc.dtools.dev/',
@@ -85,6 +85,7 @@ def find_one_with_retry(contract_name, table_name, query):
                         ' stop update .....')
     return result
 
+
 def find_with_retry(contract_name, table_name, query):
     result = None
     success = False
@@ -133,6 +134,7 @@ def get_market_with_retry(token):
         return market[0]
     else:
         return None
+
 
 @st.cache_data(ttl="1h")
 def get_account_balances(account_name, filter_symbols=None):

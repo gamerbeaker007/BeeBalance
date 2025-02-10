@@ -34,11 +34,7 @@ def get_page(df,
         index=df.columns.get_loc(x_axis) if x_axis in df.columns else 0
     )
 
-    if y_axes:
-        default = [y for y in y_axes if y in df.columns]
-    else:
-        default = [df.columns[1]]
-    y_axes = st.sidebar.multiselect("Select Y-axis", df.columns, default=default)
+    y_axes = determine_y_axes(df, y_axes)
 
     is_y_categorical = any(df[y].dtype == "O" for y in y_axes)
     x_log = st.sidebar.checkbox("Log Scale for X-axis", disabled=(df[x_axis].dtype == "O"), value=x_log)
@@ -56,19 +52,7 @@ def get_page(df,
     enable_filter = st.sidebar.checkbox("Enable Filtering", value=enable_filter)
 
     if enable_filter:
-        filter_column = st.sidebar.selectbox("Select Column to Filter", df.select_dtypes(include=[np.number]).columns,
-                                             index=df.select_dtypes(include=[np.number]).columns.get_loc(
-                                                 filter_column) if filter_column in df.columns else 0)
-        min_val, max_val = df[filter_column].min(), df[filter_column].max()
-
-        filter_range = st.sidebar.slider(
-            "Select Range", min_value=int(min_val),
-            max_value=min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE),
-            value=[int(filter_range[0]), int(filter_range[1])] if filter_range else (
-                int(min_val), min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE)),
-            step=1
-        )
-        df = df[(df[filter_column] >= filter_range[0]) & (df[filter_column] <= filter_range[1])].reset_index(drop=True)
+        df = filter_sub_selection(df, filter_column, filter_range)
         if df.empty:
             st.warning("⚠️ The selected filter range resulted in no data. Please adjust the filter criteria.")
             return
@@ -76,31 +60,13 @@ def get_page(df,
     st.sidebar.subheader("Chart type config")
     enable_color_mode = st.sidebar.checkbox("Enable Color Mode")
 
-    color_mode_columns = None
-    if enable_color_mode:
-        color_mode_columns = st.sidebar.selectbox("Select Color Mode Column",
-                                                  df.select_dtypes(exclude=[np.number]).columns, index=0)
+    color_mode_columns = determine_color_mode_columns(df, enable_color_mode)
 
-    if plot_colors is None:
-        plot_colors = {}
-    if plot_types is None:
-        plot_types = {}
-    for y in y_axes:
-        chart_types = ["Line", "Scatter", "Bar"]
-        index = chart_types.index(plot_types[y]) if y in plot_types else 0
-        plot_types[y] = st.sidebar.radio(f"Select plot type for {y}", chart_types, index=index)
-        if not enable_color_mode:
-            plot_colors[y] = st.sidebar.color_picker(f"Select color for {y}", value=plot_colors.get(y, "#1f77b4"))
+    plot_colors, plot_types = determine_sub_plots(enable_color_mode, plot_colors, plot_types, y_axes)
 
     enable_bubble_size = st.sidebar.checkbox("Enable Bubble Size", True if enable_bubble_size else None)
 
-    log_scale_factor = 1
-    if enable_bubble_size:
-        numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
-        bubble_column = st.sidebar.selectbox("Select Bubble Size Column", numeric_columns, index=numeric_columns.index(
-            bubble_column) if bubble_column in numeric_columns else 0)
-        log_scale_factor = st.sidebar.slider("Bubble Size Log Scale Factor", 1.0, 10.0, 5.0, step=0.1)
-        df["bubble_size"] = np.clip((np.log1p(df[bubble_column])) * log_scale_factor, 1, 30)
+    bubble_column, log_scale_factor = determine_bubble_size(bubble_column, df, enable_bubble_size)
 
     enable_ref_line = st.sidebar.checkbox("Enable Reference Line", True if enable_ref_line else None)
     ref_value = st.sidebar.number_input("Reference Line Value",
@@ -108,8 +74,7 @@ def get_page(df,
     ref_color = st.sidebar.color_picker("Reference Line Color",
                                         ref_color if ref_color else "#FF0000") if enable_ref_line else None
 
-    if df[x_axis].dtype == "O":
-        df[x_axis] = df[x_axis].astype(str)
+    df = update_x_axis_to_category(df, x_axis)
 
     # **Hover Info: Now enabled by default with X and selected Y columns**
     default_hover_columns = [x_axis] + y_axes
@@ -123,14 +88,6 @@ def get_page(df,
 
     # Create hover text column
     df["hover_text"] = df.apply(format_hover_text, axis=1) if enable_hover and hover_columns else None
-
-    # Optimize tick values: Limit to 30 unique values max
-    def limit_tick_values(values, max_ticks=30):
-        values = np.sort(values)
-        if len(values) > max_ticks:
-            indices = np.linspace(0, len(values) - 1, max_ticks, dtype=int)
-            values = values[indices]
-        return values
 
     # Get optimized tick values for log scale
     x_ticks = limit_tick_values(df[x_axis].unique()) if x_log and df[x_axis].dtype != "O" else None
@@ -178,19 +135,9 @@ def get_page(df,
         for trace in traces.data:
             fig.add_trace(trace)
 
-    # Add Bubble Size Legend (Only if Scatter is selected)
-    if enable_bubble_size:
-        example_sizes = [min(df[bubble_column]), np.median(df[bubble_column]), max(df[bubble_column])]
-        for size in example_sizes:
-            fig.add_trace(go.Scatter(
-                x=[None], y=[None],  # Hidden data points
-                mode="markers",
-                marker=dict(size=np.log1p(size) * log_scale_factor, color="gray", opacity=0.5),
-                name=f"{bubble_column}: {round(size)}"
-            ))
+    add_bubble_size_legend(bubble_column, df, enable_bubble_size, fig, log_scale_factor)
 
-    if enable_ref_line:
-        fig.add_hline(y=ref_value, line_dash="dash", line_color=ref_color, annotation_text=f"Ref: {ref_value}")
+    add_ref_line(enable_ref_line, fig, ref_color, ref_value)
 
     fig.update_layout(
         xaxis=dict(
@@ -213,3 +160,94 @@ def get_page(df,
     )
 
     st.plotly_chart(fig)
+
+
+def update_x_axis_to_category(df, x_axis):
+    if df[x_axis].dtype == "O":
+        df[x_axis] = df[x_axis].astype(str)
+    return df
+
+
+def determine_bubble_size(bubble_column, df, enable_bubble_size):
+    log_scale_factor = 1
+    if enable_bubble_size:
+        numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        bubble_column = st.sidebar.selectbox("Select Bubble Size Column", numeric_columns, index=numeric_columns.index(
+            bubble_column) if bubble_column in numeric_columns else 0)
+        log_scale_factor = st.sidebar.slider("Bubble Size Log Scale Factor", 1.0, 10.0, 5.0, step=0.1)
+        df["bubble_size"] = np.clip((np.log1p(df[bubble_column])) * log_scale_factor, 1, 30)
+    return bubble_column, log_scale_factor
+
+
+def determine_color_mode_columns(df, enable_color_mode):
+    color_mode_columns = None
+    if enable_color_mode:
+        color_mode_columns = st.sidebar.selectbox("Select Color Mode Column",
+                                                  df.select_dtypes(exclude=[np.number]).columns, index=0)
+    return color_mode_columns
+
+
+def determine_y_axes(df, y_axes):
+    if y_axes:
+        default = [y for y in y_axes if y in df.columns]
+    else:
+        default = [df.columns[1]]
+    y_axes = st.sidebar.multiselect("Select Y-axis", df.columns, default=default)
+    return y_axes
+
+
+def add_bubble_size_legend(bubble_column, df, enable_bubble_size, fig, log_scale_factor):
+    # Add Bubble Size Legend (Only if Scatter is selected)
+    if enable_bubble_size:
+        example_sizes = [min(df[bubble_column]), np.median(df[bubble_column]), max(df[bubble_column])]
+        for size in example_sizes:
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None],  # Hidden data points
+                mode="markers",
+                marker=dict(size=np.log1p(size) * log_scale_factor, color="gray", opacity=0.5),
+                name=f"{bubble_column}: {round(size)}"
+            ))
+
+
+def add_ref_line(enable_ref_line, fig, ref_color, ref_value):
+    if enable_ref_line:
+        fig.add_hline(y=ref_value, line_dash="dash", line_color=ref_color, annotation_text=f"Ref: {ref_value}")
+
+
+def determine_sub_plots(enable_color_mode, plot_colors, plot_types, y_axes):
+    if plot_colors is None:
+        plot_colors = {}
+    if plot_types is None:
+        plot_types = {}
+    for y in y_axes:
+        chart_types = ["Line", "Scatter", "Bar"]
+        index = chart_types.index(plot_types[y]) if y in plot_types else 0
+        plot_types[y] = st.sidebar.radio(f"Select plot type for {y}", chart_types, index=index)
+        if not enable_color_mode:
+            plot_colors[y] = st.sidebar.color_picker(f"Select color for {y}", value=plot_colors.get(y, "#1f77b4"))
+    return plot_colors, plot_types
+
+
+def filter_sub_selection(df, filter_column, filter_range):
+    filter_column = st.sidebar.selectbox("Select Column to Filter", df.select_dtypes(include=[np.number]).columns,
+                                         index=df.select_dtypes(include=[np.number]).columns.get_loc(
+                                             filter_column) if filter_column in df.columns else 0)
+    min_val, max_val = df[filter_column].min(), df[filter_column].max()
+    filter_range = st.sidebar.slider(
+        "Select Range", min_value=int(min_val),
+        max_value=min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE),
+        value=[int(filter_range[0]), int(filter_range[1])] if filter_range else (
+            int(min_val), min(int(max_val), MAX_STREAMLIT_SLIDER_VALUE)),
+        step=1
+    )
+    df = df[(df[filter_column] >= filter_range[0]) & (df[filter_column] <= filter_range[1])].reset_index(drop=True)
+    return df
+
+
+# Optimize tick values: Limit to 30 unique values max
+def limit_tick_values(values, max_ticks=30):
+    values = np.sort(values)
+    if len(values) > max_ticks:
+        indices = np.linspace(0, len(values) - 1, max_ticks, dtype=int)
+        values = values[indices]
+    return values

@@ -4,60 +4,41 @@ from time import sleep
 import pandas as pd
 
 from src.api import spl, hive_engine
+from src.pages.main_subpages.spl_balances import token_columns
 
 
 def calculate_prices(df, balance_df, hive_in_dollar):
-    # Exclude this list because they are not on hive engine.
-    # Currently,  calculate value on hive engine because to be conservative lower values iso of internal SPL market.
-    exclude_list = [
-        'BLDSTONE',
-        'CREDITS',
-        'DEC-B',  # has no value any more unable to get out of splinterlands
-        'GLADIUS',
-        'GOLD',
-        'GP',
-        'GRAIN',
-        'LEGENDARY',
-        'MERITS',
-        'TC',
-        'PURCHASED_ENERGY',
-        'PWRSTONE',
-        'VOUCHER-TOTAL'  # already done via VOUCHER and VOUCHER-G
-        'SPSP-OUT'
-    ]
-
     for index, row in balance_df.iterrows():
 
         token = row.token
         balance = row.balance
-        if token not in exclude_list:
-            if token == 'SPSP':
-                token_market = hive_engine.get_market_with_retry('SPS')
-            elif token == 'DICE':
-                token_market = hive_engine.get_market_with_retry('SLDICE')
-            elif token == 'VOUCHER-G':
-                token_market = hive_engine.get_market_with_retry('VOUCHER')
-            else:
-                token_market = hive_engine.get_market_with_retry(token)
-
-            if token_market:
-                quantity = balance
-                hive_value = float(token_market["highestBid"])
-                value = round(hive_value * hive_in_dollar * quantity, 2)
-                if quantity:
-                    df[str(token.lower()) + '_qty'] = quantity
-                    df[str(token.lower()) + '_value'] = value
-
-        if token == 'CREDITS':
+        if token == 'SPSP':
+            token_market = hive_engine.get_market_with_retry('SPS')
+        elif token == 'DICE':
+            token_market = hive_engine.get_market_with_retry('SLDICE')
+        elif token == 'VOUCHER-G':
+            token_market = hive_engine.get_market_with_retry('VOUCHER')
+        elif token == 'CREDITS':
             df[str(token.lower()) + '_qty'] = balance
             df[str(token.lower()) + '_value'] = round(balance * 0.001, 2)
+            token_market = None
+        else:
+            token_market = hive_engine.get_market_with_retry(token)
+
+        if token_market:
+            quantity = balance
+            hive_value = float(token_market["highestBid"])
+            value = round(hive_value * hive_in_dollar * quantity, 2)
+            if quantity:
+                df[str(token.lower()) + '_qty'] = quantity
+                df[str(token.lower()) + '_value'] = value
 
     return df
 
 
 def get_token_value(account):
     hive_in_dollar = float(spl.get_prices()['hive'])
-    spl_balances = spl.get_balances(account)[['token', 'balance']]
+    spl_balances = spl.get_balances(account, filter_tokens=token_columns)[['token', 'balance']]
     df = pd.DataFrame({'date': datetime.today().strftime('%Y-%m-%d'),
                        'account_name': account},
                       index=[0])

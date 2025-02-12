@@ -70,7 +70,11 @@ def retry_api_call(call_func, contract_name, table_name, query, attempts=3):
 
 
 def find_one_with_retry(contract_name, table_name, query):
-    return retry_api_call(lambda api, c, t, q: api.find_one(c, t, q), contract_name, table_name, query)
+    result = retry_api_call(lambda api, c, t, q: api.find_one(c, t, q), contract_name, table_name, query)
+    if result:
+        return result[0]
+    else:
+        return None
 
 
 def find_with_retry(contract_name, table_name, query):

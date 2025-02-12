@@ -15,8 +15,8 @@ from src.api.hive_engine import (
 )
 
 # Sample mock data
-MOCK_LIQUIDITY_POSITION = {"shares": "100.5"}
-MOCK_POOL = {"baseQuantity": "200.0", "quoteQuantity": "150.0", "totalShares": "500.0"}
+MOCK_LIQUIDITY_POSITION = [{"shares": "100.5"}]
+MOCK_POOL = [{"baseQuantity": "200.0", "quoteQuantity": "150.0", "totalShares": "500.0"}]
 MOCK_MARKET = {"symbol": "TOKEN", "price": "1.23"}
 MOCK_BALANCES = [{"account": "user", "symbol": "TOKEN", "balance": "50"}]
 
@@ -25,6 +25,8 @@ MOCK_BALANCES = [{"account": "user", "symbol": "TOKEN", "balance": "50"}]
 @pytest.fixture(autouse=True)
 def mock_api():
     st.cache_data.clear()
+    st.cache_resource.clear()
+
     """Reset global state before every test."""
     with patch("src.api.hive_engine.Api") as mock_api_class:
         mock_instance = MagicMock()
@@ -72,7 +74,7 @@ def test_get_quantity_no_result(mock_api):
 
 def test_get_market_with_retry(mock_api):
     """Test get_market_with_retry function."""
-    mock_api.find_one.return_value = MOCK_MARKET
+    mock_api.find_one.return_value = [MOCK_MARKET]
 
     result = get_market_with_retry("TOKEN")
     assert result == MOCK_MARKET
@@ -121,7 +123,7 @@ def test_get_account_balances_filter_symbols(mock_api):
 
 def test_find_one_with_retry(mock_api):
     """Test find_one_with_retry function with successful request."""
-    mock_api.find_one.return_value = MOCK_MARKET
+    mock_api.find_one.return_value = [MOCK_MARKET]
 
     result = find_one_with_retry("market", "metrics", {"symbol": "TOKEN"})
     assert result == MOCK_MARKET

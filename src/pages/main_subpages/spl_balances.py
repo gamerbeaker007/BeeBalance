@@ -86,13 +86,18 @@ def get_page(df):
 
 
 def add_cards(sps_balances):
+    # Define a safe sum function to handle missing columns
+    def safe_sum(df, column):
+        return df[column].sum() if column in df.columns else 0
+
     # Display the cards in a row
     col1, col2, col3 = st.columns(3)
+
     with col1:
         st.markdown(
             create_card(
                 "SPS + Staked SPS",
-                f"{sps_balances['SPS'].sum() + sps_balances['SPSP'].sum()} SPS",
+                f"{safe_sum(sps_balances, 'SPS') + safe_sum(sps_balances, 'SPSP')} SPS",
                 icons.sps_icon_url,
             ),
             unsafe_allow_html=True,
@@ -100,16 +105,17 @@ def add_cards(sps_balances):
         st.markdown(
             create_card(
                 "VOUCHERS",
-                f"{sps_balances['VOUCHER'].sum()} VOUCHERS",
+                f"{safe_sum(sps_balances, 'VOUCHER')} VOUCHERS",
                 icons.voucher_icon_url,
             ),
             unsafe_allow_html=True,
         )
+
     with col2:
         st.markdown(
             create_card(
                 "DEC + DEC-B",
-                f"{sps_balances['DEC'].sum() + sps_balances['DEC-B'].sum()} DEC",
+                f"{safe_sum(sps_balances, 'DEC') + safe_sum(sps_balances, 'DEC-B')} DEC",
                 icons.dec_icon_url,
             ),
             unsafe_allow_html=True,
@@ -117,16 +123,17 @@ def add_cards(sps_balances):
         st.markdown(
             create_card(
                 "Validator License",
-                f"{sps_balances['LICENSE'].sum()} #",
+                f"{safe_sum(sps_balances, 'LICENSE')} #",
                 icons.license_icon_url,
             ),
             unsafe_allow_html=True,
         )
+
     with col3:
         st.markdown(
             create_card(
                 "Credits",
-                f"{sps_balances['CREDITS'].sum()} CREDITS",
+                f"{safe_sum(sps_balances, 'CREDITS')} CREDITS",
                 icons.credits_icon_url,
             ),
             unsafe_allow_html=True,
@@ -134,7 +141,7 @@ def add_cards(sps_balances):
         st.markdown(
             create_card(
                 "Land Claims",
-                f"{sps_balances['PLOT'].sum() + sps_balances['TRACT'].sum() + sps_balances['REGION'].sum()} #",
+                f"{safe_sum(sps_balances, 'PLOT') + safe_sum(sps_balances, 'TRACT') + safe_sum(sps_balances, 'REGION')} #",
                 icons.land_icon_url_svg,
             ),
             unsafe_allow_html=True,

@@ -141,7 +141,9 @@ def add_cards(sps_balances):
         st.markdown(
             create_card(
                 "Land Claims",
-                f"{safe_sum(sps_balances, 'PLOT') + safe_sum(sps_balances, 'TRACT') + safe_sum(sps_balances, 'REGION')} #",
+                f"{safe_sum(sps_balances, 'PLOT')
+                   + safe_sum(sps_balances, 'TRACT')
+                   + safe_sum(sps_balances, 'REGION')} #",
                 icons.land_icon_url_svg,
             ),
             unsafe_allow_html=True,

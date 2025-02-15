@@ -12,3 +12,4 @@ numpy~=1.26.4
 chardet~=5.2.0
 pytest~=8.3.4
 pytest-cov~=6.0.0
+requests_mock~=1.12.1

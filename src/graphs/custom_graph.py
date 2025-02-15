@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -36,8 +37,11 @@ def get_page(df,
 
     y_axes = determine_y_axes(df, y_axes)
 
-    is_y_categorical = any(df[y].dtype == "O" for y in y_axes)
-    x_log = st.sidebar.checkbox("Log Scale for X-axis", disabled=(df[x_axis].dtype == "O"), value=x_log)
+    is_y_categorical = any(pd.api.types.is_object_dtype(df[y]) or pd.api.types.is_string_dtype(df[y]) for y in y_axes)
+
+    x_log = st.sidebar.checkbox("Log Scale for X-axis",
+                                disabled=not pd.api.types.is_numeric_dtype(df[x_axis]),
+                                value=x_log)
     y_log = st.sidebar.checkbox("Log Scale for Y-axis", disabled=is_y_categorical,
                                 value=y_log if is_y_categorical else y_log)
 
@@ -90,7 +94,7 @@ def get_page(df,
     df["hover_text"] = df.apply(format_hover_text, axis=1) if enable_hover and hover_columns else None
 
     # Get optimized tick values for log scale
-    x_ticks = limit_tick_values(df[x_axis].unique()) if x_log and df[x_axis].dtype != "O" else None
+    x_ticks = limit_tick_values(df[x_axis].unique()) if x_log and pd.api.types.is_numeric_dtype(df[x_axis]) else None
     y_ticks = limit_tick_values(np.unique(df[y_axes].values)) if y_log else None
 
     fig = go.Figure()
@@ -141,9 +145,9 @@ def get_page(df,
 
     fig.update_layout(
         xaxis=dict(
-            type="log" if x_log and df[x_axis].dtype != "O" else "category",
+            type="log" if x_log and pd.api.types.is_numeric_dtype(df[x_axis]) else "category",
             categoryorder="array",
-            categoryarray=df[x_axis] if df[x_axis].dtype == "O" else None,
+            categoryarray=df[x_axis] if pd.api.types.is_numeric_dtype(df[x_axis]) else None,
             tickvals=x_ticks if x_log else None,  # Use real values for tick marks
             tickmode="array" if x_log else None,
             showgrid=True,
@@ -163,7 +167,7 @@ def get_page(df,
 
 
 def update_x_axis_to_category(df, x_axis):
-    if df[x_axis].dtype == "O":
+    if pd.api.types.is_object_dtype(df[x_axis]):
         df[x_axis] = df[x_axis].astype(str)
     return df
 

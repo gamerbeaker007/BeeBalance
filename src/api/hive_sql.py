@@ -1,5 +1,7 @@
+import datetime
 import logging
-from functools import lru_cache
+from contextlib import closing
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
@@ -8,40 +10,74 @@ import streamlit as st
 
 log = logging.getLogger("Hive SQL")
 
-# Access secrets
-db_username = st.secrets["database"]["username"]
-db_password = st.secrets["database"]["password"]
+SERVER = "vip.hivesql.io"
+DB = "DBHive"
+
+
+def get_db_credentials():
+    """Retrieve database credentials from Streamlit secrets."""
+    return st.secrets["database"]["username"], st.secrets["database"]["password"]
 
 
 def find_valid_connection_string():
     """Finds a valid SQL connection string by testing available ODBC drivers."""
+    db_username, db_password = get_db_credentials()
     driver_names = [f"ODBC Driver {x} for SQL Server" for x in [17, 18]]
     for driver_name in driver_names:
-        connection_string_cand = (
+        conn_str = (
             f"Driver={driver_name};"
-            f"Server=vip.hivesql.io;"
-            f"Database=DBHive;"
+            f"Server={SERVER};"
+            f"Database={DB};"
             f"UID={db_username};"
             f"PWD={db_password};"
             f"TrustServerCertificate=yes;"
             f"Encrypt=yes"
         )
         try:
-            log.info(f"Trying driver {driver_name}")
-            connection = pypyodbc.connect(connection_string_cand)
-            connection.close()
-            log.info(f"Driver {driver_name} successfully connected")
-            return connection_string_cand
+            with closing(pypyodbc.connect(conn_str)) as connection, closing(connection.cursor()):
+                log.info(f"Connected successfully using {driver_name}")
+                return conn_str
         except pypyodbc.Error as e:
-            log.info(f"Error for driver: {driver_name}. Error message: {e}")
-            continue
-    return None  # If no valid connection string is found
+            log.warning(f"Failed with {driver_name}: {e}")
+    log.error("No working ODBC driver found.")
+    return None
 
 
 @st.cache_resource
 def get_cached_connection_string():
     """Caches the SQL connection string to avoid redundant computations."""
     return find_valid_connection_string()
+
+
+def convert_dataframe_types(df, cursor_descriptions):
+    """
+    Converts DataFrame columns to appropriate types based on SQL column types.
+
+    Parameters:
+    - df (pd.DataFrame): The DataFrame to be converted.
+    - cursor_description (list): The cursor.description containing column names and types.
+
+    Returns:
+    - pd.DataFrame: DataFrame with converted column types.
+    """
+    type_map = {
+        str: "string",
+        int: "Int64",  # Pandas nullable integer type
+        float: "float64",
+        bool: "boolean",  # Pandas nullable boolean type
+        Decimal: "float64",  # Convert Decimal to float for Pandas compatibility
+        datetime.date: "datetime64[ns]",  # Convert to Pandas datetime format
+        datetime.datetime: "datetime64[ns]",
+    }
+
+    for column_name, slq_type, *rest in cursor_descriptions:
+        sample_value = df[column_name].dropna().iloc[0] if not df[column_name].dropna().empty else None
+        python_type = type(sample_value)
+
+        if python_type in type_map:
+            df[column_name] = df[column_name].astype(type_map[python_type])
+
+    return df
 
 
 def execute_query_df(query, params=None):
@@ -55,101 +91,89 @@ def execute_query_df(query, params=None):
     Returns:
     - pd.DataFrame with query results or an empty DataFrame on failure/no results.
     """
-    connection = None
     conn_string = get_cached_connection_string()
-
     if conn_string is None:
         log.error("No valid database connection string found.")
         return pd.DataFrame()
 
     try:
-        connection = pypyodbc.connect(conn_string)
-        cursor = connection.cursor()
+        with closing(pypyodbc.connect(conn_string)) as connection, closing(connection.cursor()) as cursor:
+            cursor.execute(query, params or ())
+            columns = [column[0] for column in cursor.description] if cursor.description else []
+            rows = cursor.fetchall()
 
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
+            if not rows:
+                return pd.DataFrame(columns=columns)
 
-        # Fetch column names dynamically from the cursor description
-        columns = [column[0] for column in cursor.description] if cursor.description else []
+            # Convert rows to dict with proper types
+            # Create DataFrame first, before type conversion
+            df = pd.DataFrame(rows, columns=columns)
 
-        # Fetch results
-        result = cursor.fetchall()
-        if result:
-            return pd.DataFrame(result, columns=columns)
-        else:
-            return pd.DataFrame(columns=columns)
+            # Convert DataFrame columns to correct types
+            df = convert_dataframe_types(df, cursor.description)
 
+            return df
     except pypyodbc.Error as e:
         log.error(f"Database error: {e}")
-        return pd.DataFrame()  # Return empty DataFrame on database error
-
-    finally:
-        if connection:
-            connection.close()
+        return pd.DataFrame()
 
 
-@lru_cache(maxsize=1)
+@st.cache_data(ttl="24h")
 def get_hive_per_mvest():
     result = execute_query_df("SELECT total_vesting_fund_hive, total_vesting_shares FROM DynamicGlobalProperties")
-    if not result.empty:  # Ensure result is not empty
-        # Unpack the first row of the result
+    if not result.empty:
         total_vesting_fund_hive, total_vesting_shares = result.iloc[0]
-        return float(total_vesting_fund_hive) / (float(total_vesting_shares) / 1e6)
-    else:
-        # Return an empty Series if the query returns no rows
-        return 0
+        if total_vesting_shares == 0:
+            log.warning("Total vesting shares is zero, returning 0.")
+            return 0
+        return total_vesting_fund_hive / (total_vesting_shares / 1e6)
+    return 0
 
 
 def batch_list(lst, batch_size):
-    for i in range(0, len(lst), batch_size):
-        yield lst[i:i + batch_size]
+    yield from (lst[i:i + batch_size] for i in range(0, len(lst), batch_size))
 
 
 def get_hive_balances(account_names):
+    if not account_names:
+        log.warning("No account names provided, returning empty DataFrame.")
+        return pd.DataFrame()
+
     if not isinstance(account_names, list):
         raise ValueError("account_names must be a list")
 
     hive_per_mvest = get_hive_per_mvest()
     df = pd.DataFrame()
 
-    # Process account names in batches
     for batch in batch_list(account_names, batch_size=500):
-        # Create the placeholders for the IN clause
         placeholders = ', '.join(['?'] * len(batch))
-
-        # SQL query using IN clause
         query = f"""
         SELECT
             name,
             created,
-            CAST (balance AS float) AS hive,
-            CAST (savings_balance AS float) AS hive_savings,
-            CAST (hbd_balance AS float) AS hbd,
-            CAST (savings_hbd_balance AS float) AS hbd_savings,
-            CAST (reputation AS float) AS reputation,
-            CAST (vesting_shares AS float) AS vesting_shares,
-            CAST (delegated_vesting_shares AS float) AS delegated_vesting_shares,
-            CAST (received_vesting_shares AS float) AS received_vesting_shares,
-            CAST (curation_rewards AS float) / 1000.0 AS curation_rewards,
-            CAST (posting_rewards AS float) / 1000.0 AS posting_rewards
-        FROM accounts
-        WHERE name IN ({placeholders})
+            balance AS hive,
+            savings_balance AS hive_savings,
+            hbd_balance AS hbd,
+            savings_hbd_balance AS hbd_savings,
+            reputation AS reputation,
+            vesting_shares AS vesting_shares,
+            delegated_vesting_shares AS delegated_vesting_shares,
+            received_vesting_shares AS received_vesting_shares,
+            curation_rewards / 1000.0 AS curation_rewards,
+            posting_rewards / 1000.0 AS posting_rewards
+        FROM accounts WHERE name IN ({placeholders})
         """
 
         batch_result = execute_query_df(query, batch)
-        if not batch_result.empty:
-            df = pd.concat([df, batch_result])
+        df = pd.concat([df, batch_result]) if not batch_result.empty else df
 
     if not df.empty:
         df["reputation_score"] = reputation_to_score(df["reputation"])
-
         conversion_factor = hive_per_mvest / 1e6
         df["hp"] = conversion_factor * df["vesting_shares"]
         df["hp delegated"] = conversion_factor * df["delegated_vesting_shares"]
         df["hp received"] = conversion_factor * df["received_vesting_shares"]
-        df["ke_ratio"] = (df["curation_rewards"] + df["posting_rewards"]) / df["hp"]
+        df["ke_ratio"] = np.where(df["hp"] > 0, (df["curation_rewards"] + df["posting_rewards"]) / df["hp"], 0)
 
     return df
 
@@ -206,16 +230,16 @@ def get_hive_balances_params(params):
     query = f"""
         SELECT
             a.name,
-            CAST (a.balance AS float) AS hive,
-            CAST (a.savings_balance AS float) AS hive_savings,
-            CAST (a.hbd_balance AS float) AS hbd,
-            CAST (a.savings_hbd_balance AS float) AS hbd_savings,
-            CAST (a.reputation AS float) AS reputation,
-            CAST (a.vesting_shares AS float) AS vesting_shares,
-            CAST (a.delegated_vesting_shares AS float) AS delegated_vesting_shares,
-            CAST (a.received_vesting_shares AS float) AS received_vesting_shares,
-            CAST (a.curation_rewards AS float) / 1000.0 AS curation_rewards,
-            CAST (a.posting_rewards AS float) / 1000.0 AS posting_rewards,
+            a.balance AS hive,
+            a.savings_balance AS hive_savings,
+            a.hbd_balance AS hbd,
+            a.savings_hbd_balance AS hbd_savings,
+            a.reputation AS reputation,
+            a.vesting_shares AS vesting_shares,
+            a.delegated_vesting_shares AS delegated_vesting_shares,
+            a.received_vesting_shares AS received_vesting_shares,
+            a.curation_rewards / 1000.0 AS curation_rewards,
+            a.posting_rewards / 1000.0 AS posting_rewards,
             COUNT(c.permlink) AS comment_count
         FROM
             Accounts a
@@ -281,29 +305,19 @@ def get_top_posting_rewards(number, minimal_posting_rewards):
         WHERE posting_rewards > {minimal_posting_rewards}
         ORDER BY posting_rewards DESC
     """
-    result = execute_query_df(query)
-
-    return result
+    return execute_query_df(query)
 
 
 def get_active_hiver_users(posting_rewards, comments, months):
-    query = f"""
-            SELECT
-                a.name,
-                a.posting_rewards,
-                COUNT(c.permlink) AS comment_count
-            FROM
-                Accounts a
-            JOIN
-                Comments c
-            ON
-                a.name = c.author
-            WHERE
-                a.posting_rewards > {posting_rewards}
-                AND c.created >= DATEADD(MONTH, -{months}, GETDATE())
-            GROUP BY
-                a.name, a.posting_rewards
-            HAVING
-                COUNT(c.permlink) > {comments};
+    query = """
+        SELECT
+            a.name,
+            a.posting_rewards,
+            COUNT(c.permlink) AS comment_count
+        FROM Accounts a
+        JOIN Comments c ON a.name = c.author
+        WHERE a.posting_rewards > ? AND c.created >= DATEADD(MONTH, ?, GETDATE())
+        GROUP BY a.name, a.posting_rewards
+        HAVING COUNT(c.permlink) > ?
     """
-    return execute_query_df(query)
+    return execute_query_df(query, (posting_rewards, -months, comments))

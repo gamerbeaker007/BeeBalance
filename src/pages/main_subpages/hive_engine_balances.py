@@ -56,7 +56,7 @@ def prepare_data(df):
             processed_rows = []  # Store processed rows
 
             for index, row in df.iterrows():
-                status.update(label=f"Fetching balances for: {row['name']}...", state="running")
+                status.update(label=f"Fetching HE balances for: {row['name']}...", state="running")
 
                 updated_row = add_token_balances(row)  # Process row
                 processed_rows.append(updated_row)  # Append result

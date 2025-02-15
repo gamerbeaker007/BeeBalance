@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
@@ -18,6 +20,18 @@ http.mount("https://", adapter)
 
 peak_monsters_url = "https://peakmonsters.com/api/market/cards/prices"
 
+log = logging.getLogger("Peakmonsters API")
+
 
 def get_market_prices_df():
-    return pd.DataFrame(http.get(peak_monsters_url).json()["prices"])
+    try:
+        response = http.get(peak_monsters_url)
+        result = response.json()  # Validate JSON response
+
+        if isinstance(result, dict) and 'prices' in result:
+            return pd.DataFrame(result["prices"])
+
+    except (ValueError, requests.exceptions.RequestException) as e:
+        log.error(f"Error fetching market prices: {e}")
+
+    return pd.DataFrame()  # Return empty DataFrame on failure

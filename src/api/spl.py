@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Any, Optional, List
 
 import pandas as pd
 import requests
@@ -7,119 +8,135 @@ from requests.adapters import HTTPAdapter
 
 from src.api.logRetry import LogRetry
 
-base_url = 'https://api2.splinterlands.com/'
-land_url = 'https://vapi.splinterlands.com/'
-prices_url = 'https://prices.splinterlands.com/'
+# API URLs
+API_URLS = {
+    "base": "https://api2.splinterlands.com/",
+    "land": "https://vapi.splinterlands.com/",
+    "prices": "https://prices.splinterlands.com/",
+}
 
-retry_strategy = LogRetry(
-    total=11,
-    status_forcelist=[429, 500, 502, 503, 504],
-    backoff_factor=2,  # wait will be [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
-    allowed_methods=['HEAD', 'GET', 'OPTIONS'],
-    logger_name="SPL Retry"
-)
-adapter = HTTPAdapter(max_retries=retry_strategy)
-http = requests.Session()
-http.mount('https://', adapter)
-
-http.headers.update({
-    "Accept-Encoding": "gzip, deflate, br, zstd",
-    "User-Agent": "BeeBalanced/1.0"
-})
-
+# Configure Logging
 log = logging.getLogger("SPL API")
+log.setLevel(logging.INFO)
+
+
+# Retry Strategy
+def configure_http_session() -> requests.Session:
+    retry_strategy = LogRetry(
+        total=11,
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=2,
+        allowed_methods=["HEAD", "GET", "OPTIONS"],
+        logger_name="SPL Retry"
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.Session()
+    session.mount("https://", adapter)
+    session.headers.update({
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "User-Agent": "BeeBalanced/1.0"
+    })
+    return session
+
+
+http = configure_http_session()
+
+
+def fetch_api_data(address: str, params: Optional[Dict[str, Any]] = None,
+                   data_key: Optional[str] = None) -> pd.DataFrame:
+    """
+    Generic function to fetch data from the Splinterlands API.
+
+    :param address: API endpoint URL.
+    :param params: Query parameters for the request.
+    :param data_key: Key to extract data from JSON response (optional).
+    :return: DataFrame with requested data or empty DataFrame on failure.
+    """
+    try:
+        response = http.get(address, params=params, timeout=10)
+        response.raise_for_status()
+
+        response_json = response.json()
+
+        # Handle API errors
+        if isinstance(response_json, dict) and "error" in response_json:
+            log.error(f"API error from {address}: {response_json['error']}")
+            return pd.DataFrame()
+
+        if data_key and isinstance(response_json, dict):
+            response_json = get_nested_value(response_json, data_key)
+
+        if isinstance(response_json, list):
+            return pd.DataFrame(response_json)
+        else:
+            return pd.DataFrame(response_json, index=[0])
+
+    except requests.exceptions.RequestException as e:
+        log.error(f"Error fetching {address}: {e}")
+        return pd.DataFrame()
 
 
 @st.cache_data(ttl="1h")
-def get_player_collection_df(username):
+def get_player_collection_df(username: str) -> pd.DataFrame:
     """
-    Fetch player card collection and add card names.
+    Fetch player card collection and return filtered DataFrame.
     """
-    df = fetch_api_data(f'{base_url}cards/collection/{username}', data_key='cards')
-
-    if not df.empty:
-        return df[
-            ['player', 'uid', 'card_detail_id', 'collection_power',
-             'xp', 'gold', 'edition', 'level', 'bcx', 'bcx_unbound']]
-
-    return df  # Returns empty DataFrame if no data
+    df = fetch_api_data(f"{API_URLS['base']}cards/collection/{username}", data_key="cards")
+    return df[["player", "uid", "card_detail_id", "collection_power", "xp", "gold", "edition", "level", "bcx",
+               "bcx_unbound"]] if not df.empty else df
 
 
 @st.cache_data(ttl="24h")
-def get_card_details():
+def get_card_details() -> pd.DataFrame:
     """
-    Fetch all card details and store them with an index.
+    Fetch and index all card details.
     """
-    log.info("FETCHING CARD DETAIL")
-    df = fetch_api_data(f'{base_url}cards/get_details')
-    return df.set_index('id') if not df.empty else df
-
-
-@st.cache_data(ttl="24h")
-def get_settings():
-    """
-    Fetch Splinterlands game settings.
-    """
-    return fetch_api_data(f'{base_url}settings')
+    log.info("Fetching card details...")
+    df = fetch_api_data(f"{API_URLS['base']}cards/get_details")
+    return df.set_index("id") if not df.empty else df
 
 
 @st.cache_data(ttl="1h")
-def get_balances(username, filter_tokens=None):
+def get_balances(username: str, filter_tokens: Optional[List[str]] = None) -> pd.DataFrame:
     """
-    Fetch player balances. Optionally filter for specific tokens.
+    Fetch player balances and optionally filter by tokens.
     """
-    df = fetch_api_data(f'{base_url}players/balances', params={'username': username})
+    df = fetch_api_data(f"{API_URLS['base']}players/balances", params={"username": username})
 
     if filter_tokens and not df.empty:
         df = df[df["token"].isin(filter_tokens)]
-
-        # Identify missing tokens
-        existing_tokens = df["token"].unique()
-        missing_tokens = [token for token in filter_tokens if token not in existing_tokens]
-
-        # Create rows for missing tokens with default values
-        missing_rows = pd.DataFrame({
-            "player": [username] * len(missing_tokens),
-            "token": missing_tokens,
-            "balance": [0] * len(missing_tokens),
-        })
-
-        # Combine the existing and missing rows
+        missing_tokens = [token for token in filter_tokens if token not in df["token"].unique()]
+        missing_rows = pd.DataFrame(
+            {"player": [username] * len(missing_tokens), "token": missing_tokens, "balance": [0] * len(missing_tokens)})
         df = pd.concat([df, missing_rows], ignore_index=True)
-        df = df[['player', 'token', 'balance']]
+        df = df[["player", "token", "balance"]]
 
     return df
 
 
 @st.cache_data(ttl="1h")
-def get_prices():
+def get_prices() -> Dict:
     """
-    Fetch current prices for assets.
-
-    TODO use fetch_api_data different response structure
+    Fetch current asset prices.
     """
-    address = prices_url + 'prices'
-    return http.get(address).json()
+    return http.get(f"{API_URLS['prices']}prices").json()
 
 
 @st.cache_data(ttl="1h")
-def get_all_cards_for_sale_df():
+def get_all_cards_for_sale_df() -> pd.DataFrame:
     """
-    Fetch all cards currently for sale on the Splinterlands market.
-    Returns a DataFrame sorted by card_detail_id.
+    Fetch all cards currently for sale.
     """
-    df = fetch_api_data(f'{base_url}market/for_sale_grouped')
-
-    # Sort by 'card_detail_id' if the DataFrame is not empty
-    return df.sort_values(by='card_detail_id') if not df.empty else df
+    df = fetch_api_data(f"{API_URLS['base']}market/for_sale_grouped")
+    return df.sort_values(by="card_detail_id") if not df.empty else df
 
 
 @st.cache_data(ttl="1h")
-def get_staked_dec_df(account_name):
+def get_staked_dec_df(account_name: str) -> pd.DataFrame:
     """
     Fetch staked DEC for land.
     """
-    return fetch_api_data(f'{land_url}land/stake/decstaked', params={'player': account_name}, data_key='data')
+    return fetch_api_data(f"{API_URLS['land']}land/stake/decstaked", params={"player": account_name}, data_key="data")
 
 
 @st.cache_data(ttl="1h")
@@ -131,7 +148,7 @@ def get_deeds_collection(username):
         'status': 'collection',
         'player': username,
     }
-    return fetch_api_data(f'{land_url}land/deeds', params=params, data_key='data.deeds')
+    return fetch_api_data(f'{API_URLS['land']}land/deeds', params=params, data_key='data.deeds')
 
 
 @st.cache_data(ttl="1h")
@@ -139,7 +156,7 @@ def get_deeds_market():
     """
     Fetch land deeds currently on the market.
     """
-    return fetch_api_data(f'{land_url}land/deeds', params={'status': 'market'}, data_key='data.deeds')
+    return fetch_api_data(f'{API_URLS['land']}land/deeds', params={'status': 'market'}, data_key='data.deeds')
 
 
 @st.cache_data(ttl="1h")
@@ -147,7 +164,7 @@ def spl_get_pools():
     """
     Fetch liquidity pools data.
     """
-    return fetch_api_data(f'{land_url}land/liquidity/pools', data_key='data')
+    return fetch_api_data(f'{API_URLS['land']}land/liquidity/pools', data_key='data')
 
 
 @st.cache_data(ttl="1h")
@@ -156,84 +173,45 @@ def get_owned_resource_sum(account, resource):
     Fetch the total owned amount of a specific resource for a player.
     Returns the sum of the "amount" column.
     """
-    df = fetch_api_data(f'{land_url}land/resources/owned', params={'player': account, 'resource': resource},
+    df = fetch_api_data(f'{API_URLS['land']}land/resources/owned', params={'player': account, 'resource': resource},
                         data_key='data')
     return df['amount'].sum() if 'amount' in df.columns else 0  # Return 0 instead of None if missing
 
 
 @st.cache_data(ttl="1h")
-def player_exist(account_name):
+def player_exist(account_name: str) -> bool:
     """
     Check if a player exists in the Splinterlands API.
-    Returns True if player balances exist, False otherwise.
     """
-    player_data = fetch_api_data(f'{base_url}players/balances', params={'players': account_name})
-
-    # If the DataFrame is not empty, the player exists
+    player_data = fetch_api_data(f"{API_URLS['base']}players/balances", params={"players": account_name})
     return not player_data.empty
 
 
 @st.cache_data(ttl="1h")
-def get_player_details(account_name):
+def get_player_details(account_name: str) -> pd.DataFrame:
     """
-    Fetch player details from the API.
+    Fetch player details.
     """
-    return fetch_api_data(f'{base_url}players/details', params={'name': account_name})
+    return fetch_api_data(f"{API_URLS['base']}players/details", params={"name": account_name})
 
 
 @st.cache_data(ttl="1h")
-def get_spsp_richlist():
+def get_spsp_richlist() -> pd.DataFrame:
     """
-    Fetch the SPSP rich list from the API.
+    Fetch the SPSP rich list.
     """
-    return fetch_api_data(f'{base_url}players/richlist', params={'token_type': 'SPSP'}, data_key='richlist')
+    return fetch_api_data(f"{API_URLS['base']}players/richlist", params={"token_type": "SPSP"}, data_key="richlist")
 
 
-def get_nested_value(dictionary, key_path, default=None):
+def get_nested_value(response_dict: dict, key_path: str) -> Any:
     """
     Retrieve a nested value from a dictionary using dot-separated keys.
-
-    :param dictionary: The dictionary to search
-    :param key_path: A dot-separated string indicating the key path (e.g., "data.deeds")
-    :param default: The default value to return if the key path doesn't exist
-    :return: The value at the specified key path or the default value
     """
     keys = key_path.split(".")
     for key in keys:
-        if isinstance(dictionary, dict) and key in dictionary:
-            dictionary = dictionary[key]
+        if isinstance(response_dict, dict) and key in response_dict:
+            response_dict = response_dict[key]
         else:
-            return default  # Return default if any key is missing
-    return dictionary
-
-
-def fetch_api_data(address, params=None, data_key=None):
-    """
-    Generic function to fetch data from the Splinterlands API.
-
-    :param endpoint: API endpoint (relative to base_url)
-    :param params: Query parameters for the request
-    :param data_key: Key to extract data from JSON response (optional)
-    :return: DataFrame with requested data or empty DataFrame on failure
-    """
-    try:
-        response = http.get(address, params=params)
-        response.raise_for_status()
-
-        # Parse JSON response
-        response_json = response.json()
-
-        # Check if an error exists in the response
-        if isinstance(response_json, dict) and "error" in response_json:
-            log.error(f"API responded with an error: {response_json['error']}")
-            return pd.DataFrame()
-
-        # If a specific data key is provided, extract that key's value
-        if data_key and isinstance(response_json, dict):
-            response_json = get_nested_value(response_json, data_key, [])
-
-        return pd.DataFrame(response_json)  # Default return
-
-    except requests.exceptions.RequestException as e:
-        log.error(f"Error fetching data from {address}: {e}")
-        return pd.DataFrame()
+            log.error(f"Invalid key requested {key_path}.. Fix api call or check response changed {response_dict}")
+            return {}  # Return empty if any key is missing
+    return response_dict

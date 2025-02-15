@@ -299,13 +299,13 @@ def get_commentators(permlinks):
 
 
 def get_top_posting_rewards(number, minimal_posting_rewards):
-    query = """
-        SELECT TOP ? name, posting_rewards
+    query = f"""
+        SELECT TOP {number} name, posting_rewards
         FROM accounts
-        WHERE posting_rewards > ?
+        WHERE posting_rewards > {minimal_posting_rewards}
         ORDER BY posting_rewards DESC
     """
-    return execute_query_df(query, (number, minimal_posting_rewards))
+    return execute_query_df(query)
 
 
 def get_active_hiver_users(posting_rewards, comments, months):

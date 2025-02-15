@@ -49,6 +49,15 @@ def test_fetch_api_data_error(mock_session):
     assert df.empty
 
 
+def test_fetch_api_data_200_error_response(mock_session):
+    """Test API error response handling."""
+    url = f"{API_URLS['base']}players/balances"
+    mock_session.get(url, json={"error": "API Failure"}, status_code=200)
+
+    df = fetch_api_data(url)
+    assert df.empty
+
+
 def test_fetch_api_data_timeout(mock_session):
     """Test request timeout handling."""
     url = f"{API_URLS['base']}players/balances"
@@ -57,6 +66,15 @@ def test_fetch_api_data_timeout(mock_session):
     df = fetch_api_data(url)
     assert df.empty
 
+
+def test_fetch_api_data_invalid_data_key(mock_session):
+    """Test request timeout handling."""
+    url = f"{API_URLS['base']}players/balances"
+    mock_response = {"player": "testuser", "token": "DEC", "balance": 1000}
+    mock_session.get(url, json=mock_response, status_code=200)
+
+    df = fetch_api_data(url, data_key='missing' )
+    assert df.empty
 
 def test_get_player_collection_df(mock_session):
     """Test fetching and processing player collection data."""

@@ -64,7 +64,7 @@ def fetch_api_data(address: str, params: Optional[Dict[str, Any]] = None,
             return pd.DataFrame()
 
         if data_key and isinstance(response_json, dict):
-            response_json = get_nested_value(response_json, data_key, [])
+            response_json = get_nested_value(response_json, data_key)
 
         if isinstance(response_json, list):
             return pd.DataFrame(response_json)
@@ -203,14 +203,15 @@ def get_spsp_richlist() -> pd.DataFrame:
     return fetch_api_data(f"{API_URLS['base']}players/richlist", params={"token_type": "SPSP"}, data_key="richlist")
 
 
-def get_nested_value(dictionary: Dict, key_path: str, default=None) -> Any:
+def get_nested_value(response_dict: dict, key_path: str) -> Any:
     """
     Retrieve a nested value from a dictionary using dot-separated keys.
     """
     keys = key_path.split(".")
     for key in keys:
-        if isinstance(dictionary, dict) and key in dictionary:
-            dictionary = dictionary[key]
+        if isinstance(response_dict, dict) and key in response_dict:
+            response_dict = response_dict[key]
         else:
-            return default
-    return dictionary
+            log.error(f"Invalid key requested {key_path}.. Fix api call or check response changed {response_dict}")
+            return {} # Return empty if any key is missing
+    return response_dict

@@ -22,6 +22,8 @@ from src.api.hive_sql import (
     get_active_hiver_users, get_db_credentials,
 )
 
+TEST_SERVER = "mockserver.local"
+TEST_DB = "TestDB"
 
 @pytest.fixture
 def sample_dataframe():
@@ -36,10 +38,13 @@ def sample_dataframe():
     return pd.DataFrame(data)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_pypyodbc():
     """Fixture to mock pypyodbc connection and cursor"""
-    with patch("src.api.hive_sql.pypyodbc.connect") as mock_connect:
+    with patch("src.api.hive_sql.pypyodbc.connect") as mock_connect, \
+         patch("src.api.hive_sql.SERVER", TEST_SERVER), \
+         patch("src.api.hive_sql.DB", TEST_DB):
+
         # Mock the connection and cursor
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
@@ -50,13 +55,6 @@ def mock_pypyodbc():
 
         # Yield the mocks for use in tests
         yield mock_connect, mock_conn, mock_cursor
-
-
-@pytest.fixture
-def mock_pypyodbc_connect():
-    """Fixture to mock pypyodbc connection."""
-    with patch("src.api.hive_sql.pypyodbc.connect") as mock_connect:
-        yield mock_connect
 
 
 @pytest.fixture(autouse=True)
@@ -96,32 +94,19 @@ def test_get_db_credentials():
     assert password == "test_pass"
 
 
-@patch("src.api.hive_sql.pypyodbc.connect")
-def test_find_valid_connection_string(mock_connect):
+def test_find_valid_connection_string(mock_pypyodbc):
     """Test if function correctly finds a valid connection string"""
-    mock_connect.return_value.__enter__.return_value = MagicMock()
+    mock_connect, mock_conn, mock_cursor = mock_pypyodbc
+
     result = find_valid_connection_string()
-    assert result is not None
-
-def test_find_valid_connection_string_success(mock_pypyodbc_connect):
-    """Test when a valid ODBC driver is found and a successful connection is made."""
-    mock_connect = mock_pypyodbc_connect
-
-    # Simulate a successful connection
-    mock_conn = MagicMock()
-    mock_connect.return_value = mock_conn
-
-    # Execute function
-    result = find_valid_connection_string()
-
-    # Assertions
     assert result is not None  # A valid connection string should be returned
     assert "Driver=ODBC Driver" in result  # Should contain driver information
     mock_connect.assert_called_once()  # Should have attempted a connection
 
-def test_find_valid_connection_string_no_working_driver(mock_pypyodbc_connect):
+
+def test_find_valid_connection_string_no_working_driver(mock_pypyodbc):
     """Test when no ODBC driver works, expecting None as return."""
-    mock_connect = mock_pypyodbc_connect
+    mock_connect, mock_conn, mock_cursor = mock_pypyodbc
 
     # Simulate all drivers failing by raising an exception
     mock_connect.side_effect = pypyodbc.Error(pypyodbc.SQL_ERROR, "Connection failed")
@@ -133,9 +118,9 @@ def test_find_valid_connection_string_no_working_driver(mock_pypyodbc_connect):
     assert result is None  # Function should return None when no driver works
     assert mock_connect.call_count == 2  # Should attempt both drivers
 
-def test_find_valid_connection_string_odbc_driver_not_found(mock_pypyodbc_connect):
+def test_find_valid_connection_string_odbc_driver_not_found(mock_pypyodbc):
     """Test when no ODBC driver is found, ensuring correct error handling."""
-    mock_connect = mock_pypyodbc_connect
+    mock_connect, mock_conn, mock_cursor = mock_pypyodbc
 
     # Simulate all drivers being unavailable by raising an exception
     mock_connect.side_effect = pypyodbc.Error(pypyodbc.SQL_ERROR, "No ODBC driver found")
@@ -183,6 +168,7 @@ def test_get_hive_per_mvest(mock_execute_query_df):
     result = get_hive_per_mvest()
     assert result == 5000.0
 
+
 @patch("src.api.hive_sql.execute_query_df")
 def test_get_hive_per_mvest_div_zero(mock_execute_query_df):
     """Test hive per mvest calculation devided """
@@ -191,6 +177,7 @@ def test_get_hive_per_mvest_div_zero(mock_execute_query_df):
     )
     result = get_hive_per_mvest()
     assert result == 0
+
 
 @patch("src.api.hive_sql.execute_query_df")
 def test_get_hive_per_mvest_empty(mock_execute_query_df):
@@ -227,12 +214,14 @@ def test_get_hive_balances(mock_execute_query_df):
     assert "reputation_score" in result.columns
     assert "hp" in result.columns
 
+
 @patch("src.api.hive_sql.execute_query_df")
 def test_get_hive_balances_no_accounts(mock_execute_query_df):
     """Test get_hive_balances function"""
     result = get_hive_balances([])
     assert isinstance(result, pd.DataFrame)
     assert result.empty
+
 
 @patch("src.api.hive_sql.execute_query_df")
 def test_get_hive_balances_incorrect_instance(mock_execute_query_df):

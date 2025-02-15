@@ -10,6 +10,8 @@ import streamlit as st
 
 log = logging.getLogger("Hive SQL")
 
+SERVER="vip.hivesql.io"
+DB="DBHive"
 
 def get_db_credentials():
     """Retrieve database credentials from Streamlit secrets."""
@@ -23,8 +25,8 @@ def find_valid_connection_string():
     for driver_name in driver_names:
         conn_str = (
             f"Driver={driver_name};"
-            f"Server=vip.hivesql.io;"
-            f"Database=DBHive;"
+            f"Server={SERVER};"
+            f"Database={DB};"
             f"UID={db_username};"
             f"PWD={db_password};"
             f"TrustServerCertificate=yes;"

@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import sleep
 
 import pandas as pd
 
@@ -64,8 +63,6 @@ def get_liquidity_pool(df, account, hive_in_dollar):
         dec = share_pct * dec_qty
         sps = share_pct * sps_qty
 
-        # TODO analyze if sleep is enough else we get an service temporary unavailable
-        sleep(1)
         dec_last_price = get_dec_last_price()
         value_hive = dec_last_price * dec
         value_hive = value_hive * 2  # liquidity pool contain equal amount of dec and sps therefor times 2

@@ -213,5 +213,5 @@ def get_nested_value(response_dict: dict, key_path: str) -> Any:
             response_dict = response_dict[key]
         else:
             log.error(f"Invalid key requested {key_path}.. Fix api call or check response changed {response_dict}")
-            return {} # Return empty if any key is missing
+            return {}  # Return empty if any key is missing
     return response_dict

@@ -25,6 +25,7 @@ from src.api.hive_sql import (
 TEST_SERVER = "mockserver.local"
 TEST_DB = "TestDB"
 
+
 @pytest.fixture
 def sample_dataframe():
     """Fixture to provide a sample DataFrame for testing."""
@@ -117,6 +118,7 @@ def test_find_valid_connection_string_no_working_driver(mock_pypyodbc):
     # Assertions
     assert result is None  # Function should return None when no driver works
     assert mock_connect.call_count == 2  # Should attempt both drivers
+
 
 def test_find_valid_connection_string_odbc_driver_not_found(mock_pypyodbc):
     """Test when no ODBC driver is found, ensuring correct error handling."""
@@ -239,6 +241,7 @@ def test_reputation_to_score_scalar():
     assert reputation_to_score(181245992354454) == pytest.approx(72.32, rel=0.01)
     assert reputation_to_score(0) == 0
 
+
 def test_reputation_to_score_series():
     """Test reputation_to_score with Pandas Series input."""
     input_series = pd.Series([1000000000, 181245992354454])
@@ -262,7 +265,6 @@ def test_score_to_reputation_series():
     assert result_series is not None
     assert result_series[0] == 1000000000
     assert result_series[1] == pytest.approx(181245992354454, rel=1)
-
 
 
 @patch("src.api.hive_sql.execute_query_df")
@@ -390,7 +392,6 @@ def test_execute_query_db_error(mock_pypyodbc):
 
     # Assertions
     assert result_df.empty is True
-
 
 
 def test_execute_query_df_no_connection_string():

@@ -1,7 +1,8 @@
-import pytest
+from unittest.mock import patch
+
 import pandas as pd
+import pytest
 import requests
-from unittest.mock import patch, MagicMock
 
 from src.api.peakmonsters import get_market_prices_df
 
@@ -81,4 +82,3 @@ def test_get_market_prices_df_connection_error(mock_http_get):
 
     assert isinstance(df, pd.DataFrame)
     assert df.empty  # Should return an empty DataFrame
-

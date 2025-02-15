@@ -73,8 +73,9 @@ def test_fetch_api_data_invalid_data_key(mock_session):
     mock_response = {"player": "testuser", "token": "DEC", "balance": 1000}
     mock_session.get(url, json=mock_response, status_code=200)
 
-    df = fetch_api_data(url, data_key='missing' )
+    df = fetch_api_data(url, data_key='missing')
     assert df.empty
+
 
 def test_get_player_collection_df(mock_session):
     """Test fetching and processing player collection data."""

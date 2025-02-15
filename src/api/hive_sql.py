@@ -10,8 +10,9 @@ import streamlit as st
 
 log = logging.getLogger("Hive SQL")
 
-SERVER="vip.hivesql.io"
-DB="DBHive"
+SERVER = "vip.hivesql.io"
+DB = "DBHive"
+
 
 def get_db_credentials():
     """Retrieve database credentials from Streamlit secrets."""

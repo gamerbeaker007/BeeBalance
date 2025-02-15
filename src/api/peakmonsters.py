@@ -22,6 +22,7 @@ peak_monsters_url = "https://peakmonsters.com/api/market/cards/prices"
 
 log = logging.getLogger("Peakmonsters API")
 
+
 def get_market_prices_df():
     try:
         response = http.get(peak_monsters_url)

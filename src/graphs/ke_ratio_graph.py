@@ -11,7 +11,8 @@ def determine_label(row):
 
 
 def add(df):
-    df = df.fillna(0).infer_objects(copy=False)
+    # SPSP can be None / NaN so make them 0
+    df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
 
     # Create a Plotly scatter plot
     fig = go.Figure()

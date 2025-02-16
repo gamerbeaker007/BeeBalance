@@ -189,13 +189,18 @@ def reputation_to_score(reputation):
     - Reputation score (float if input is scalar, Pandas Series if input is a Series)
     """
     if isinstance(reputation, (int, float)):  # Scalar case
-        return ((np.log10(max(reputation, 1e-9)) - 9) * 9) + 25 if reputation > 0 else 0.0
+        if reputation <= 0:
+            return 0.0  # Explicitly handle zero or negative values
+        return ((np.log10(max(reputation, 1e-9)) - 9) * 9) + 25
+
     else:  # Pandas Series or NumPy array case
-        return np.where(
-            reputation > 0,
-            ((np.log10(np.clip(reputation, 1e-9, None)) - 9) * 9) + 25,
-            0.0
-        )
+        reputation = np.array(reputation)  # Ensure it's a NumPy array
+        scores = np.full_like(reputation, 0.0, dtype=np.float64)  # Default to zero
+
+        mask = reputation > 0  # Boolean mask for valid values
+        scores[mask] = ((np.log10(np.clip(reputation[mask], 1e-9, None)) - 9) * 9) + 25
+
+        return pd.Series(scores) if isinstance(reputation, pd.Series) else scores
 
 
 def score_to_reputation(reputation_score):

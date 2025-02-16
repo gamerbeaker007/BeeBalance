@@ -3,7 +3,9 @@ import streamlit as st
 
 
 def add(df):
-    df = df.fillna(0)
+    # SPSP can be None / NaN so make them 0
+    df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
+
     df = df.sort_values(by="SPSP", ascending=False)
 
     fig = go.Figure()

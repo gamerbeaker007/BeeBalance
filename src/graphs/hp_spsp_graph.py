@@ -3,7 +3,8 @@ import streamlit as st
 
 
 def add(df):
-    df = df.fillna(0)
+    # SPSP can be None / NaN so make them 0
+    df["SPSP"] = df["SPSP"].fillna(0).infer_objects(copy=False)
 
     fig = go.Figure()
 

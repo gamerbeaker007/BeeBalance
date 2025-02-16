@@ -3,7 +3,6 @@ import streamlit as st
 
 
 def add(df):
-    df = df.fillna(0)
     df = df.sort_values(by="hp", ascending=False).reset_index(drop=True)
 
     # Assign hp_rank (0 for highest HP, increasing downwards)

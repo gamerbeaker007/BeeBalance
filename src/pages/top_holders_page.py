@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from src.api import hive_sql, spl
+from src.api import hive_sql, sps_validator
 from src.graphs import ke_ratio_graph, ke_hp_graph, hp_spsp_graph, spsp_graph
 from src.pages.main_subpages import hivesql_balances, spl_balances
 
@@ -178,8 +178,9 @@ def get_page():
     posting_reward = 500
     comments = 10
     months = 6
+    sps_rich_list_limit = 2000
 
-    get_buttons_sections(account_limit, posting_reward)
+    get_buttons_sections(account_limit, posting_reward, sps_rich_list_limit)
 
     button_clicked = st.session_state.get("button_clicked")
     if not button_clicked:
@@ -197,17 +198,17 @@ def get_page():
             create_page(top_authors.name.to_list())
 
         elif button_clicked == "rich list spsp":
-            rich_list = spl.get_spsp_richlist()
+            rich_list = sps_validator.get_rich_list_spsp(sps_rich_list_limit)
             create_page(rich_list.player.to_list(), rich_list)
 
 
-def get_buttons_sections(account_limit, posting_reward):
+def get_buttons_sections(account_limit, posting_reward, sps_rich_list_limit):
     col1, col2, col3, col4, _ = st.columns([1, 1, 1, 1, 4])
     with col1:
         if st.button(f"TOP {account_limit} HP holders with posting rewards >{posting_reward}"):
             st.session_state.button_clicked = "top authors"
     with col2:
-        if st.button("Richlist Staked SPS Holders"):
+        if st.button(f"Richlist Staked SPS Holders (top {sps_rich_list_limit})"):
             st.session_state.button_clicked = "rich list spsp"
     with col3:
         if st.session_state.get("authenticated"):

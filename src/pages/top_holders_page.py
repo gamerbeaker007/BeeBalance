@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from src.api import hive_sql, spl, sps_validator
+from src.api import hive_sql, sps_validator
 from src.graphs import ke_ratio_graph, ke_hp_graph, hp_spsp_graph, spsp_graph
 from src.pages.main_subpages import hivesql_balances, spl_balances
 
@@ -178,7 +178,7 @@ def get_page():
     posting_reward = 500
     comments = 10
     months = 6
-    sps_rich_list_limit = 10
+    sps_rich_list_limit = 2000
 
     get_buttons_sections(account_limit, posting_reward, sps_rich_list_limit)
 

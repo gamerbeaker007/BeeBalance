@@ -5,6 +5,7 @@ from src.pages.main_subpages import ke_ratio_links
 from src.static import icons
 from src.util import account_util
 from src.util.card import create_card
+from src.util.large_number_util import format_large_number
 
 
 def determine_emoji(ratio):
@@ -64,7 +65,7 @@ def add_cards(result):
         st.markdown(
             create_card(
                 "HIVE",
-                f"{hive_balance} HIVE",
+                f"{format_large_number(hive_balance)} HIVE",
                 icons.hive_icon_url,
             ),
             unsafe_allow_html=True,
@@ -73,7 +74,7 @@ def add_cards(result):
         st.markdown(
             create_card(
                 "HP (Hive Powered Up)",
-                f"{hp_balance} HIVE",
+                f"{format_large_number(hp_balance)} HIVE",
                 icons.hive_icon_url,
             ),
             unsafe_allow_html=True,
@@ -82,7 +83,7 @@ def add_cards(result):
         st.markdown(
             create_card(
                 "HBD",
-                f"{hbd_balance} $",
+                f"{format_large_number(hbd_balance)} $",
                 icons.hbd_icon_url,
             ),
             unsafe_allow_html=True,
@@ -91,7 +92,7 @@ def add_cards(result):
         st.markdown(
             create_card(
                 "Author rewards",
-                f"{posting_rewards} HIVE",
+                f"{format_large_number(posting_rewards)} HIVE",
                 icons.credits_icon_url,
             ),
             unsafe_allow_html=True,
@@ -100,7 +101,7 @@ def add_cards(result):
         st.markdown(
             create_card(
                 "Curation rewards",
-                f"{curation_rewards} HIVE",
+                f"{format_large_number(curation_rewards)} HIVE",
                 icons.credits_icon_url,
             ),
             unsafe_allow_html=True,

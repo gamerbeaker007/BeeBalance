@@ -7,6 +7,7 @@ from src.api import spl, peakmonsters
 from src.static import icons
 from src.util import spl_util
 from src.util.card import create_card
+from src.util.large_number_util import format_large_number
 
 log = logging.getLogger('SPL Estimates')
 
@@ -14,19 +15,23 @@ log = logging.getLogger('SPL Estimates')
 def get_collection_card(df):
     list_value = df.filter(regex='list_value').sum(axis=1, numeric_only=True).sum()
     market_value = df.filter(regex='market_value').sum(axis=1, numeric_only=True).sum()
+    list_value = format_large_number(list_value)
+    market_value = format_large_number(market_value)
 
     return create_card(
         ' Collection',
-        f'List: {round(float(list_value), 2)} $ <br>Market:{round(float(market_value), 2)} $',
+        f'List: {list_value} $ <br>Market:{market_value} $',
         icons.cards_icon_url,
     )
 
 
 def get_total_card(df):
     total_value = df.filter(regex='_value').filter(regex='.*(?<!_list_value)$').sum(axis=1, numeric_only=True).sum()
+    total_value = format_large_number(total_value)
+
     return create_card(
         'Total',
-        f'{round(float(total_value), 2)} $',
+        f'{total_value} $',
         icons.credits_icon_url,
     )
 
@@ -34,9 +39,12 @@ def get_total_card(df):
 def get_dec_card(df):
     liquid_value = df.filter(regex='dec_value').sum(axis=1, numeric_only=True).sum()
     staked_value = df.filter(regex='dec_staked_value').sum(axis=1, numeric_only=True).sum()
+    liquid_value = format_large_number(liquid_value)
+    staked_value = format_large_number(staked_value)
+
     return create_card(
         'DEC',
-        f'Liquid: {round(float(liquid_value), 2)} $ <br>Staked: {round(float(staked_value), 2)} $',
+        f'Liquid: {liquid_value} $ <br>Staked: {staked_value} $',
         icons.dec_icon_url,
     )
 
@@ -44,36 +52,43 @@ def get_dec_card(df):
 def get_sps_card(df):
     liquid_value = df.filter(regex='sps_value').sum(axis=1, numeric_only=True).sum()
     staked_value = df.filter(regex='spsp_value').sum(axis=1, numeric_only=True).sum()
+    liquid_value = format_large_number(liquid_value)
+    staked_value = format_large_number(staked_value)
     return create_card(
         'SPS',
-        f'Liquid: {round(float(liquid_value), 2)} $ <br>Staked: {round(float(staked_value), 2)} $',
+        f'Liquid: {liquid_value} $ <br>Staked: {staked_value} $',
         icons.sps_icon_url,
     )
 
 
 def get_license_card(df):
-    value = df.filter(regex='license_value').sum(axis=1, numeric_only=True).sum()
+    value = df.filter(regex='.*license_value').sum(axis=1, numeric_only=True).sum()
+    value = format_large_number(value)
     return create_card(
         'License',
-        f'{round(float(value), 2)} $',
+        f'{value} $',
         icons.license_icon_url,
     )
 
 
 def get_voucher_card(df):
     value = df.filter(regex='voucher_value').sum(axis=1, numeric_only=True).sum()
+    value = format_large_number(value)
+
     return create_card(
         'Voucher',
-        f'{round(float(value), 2)} $',
+        f'{value} $',
         icons.voucher_icon_url,
     )
 
 
 def get_credits_card(df):
     value = df.filter(regex='credits_value').sum(axis=1, numeric_only=True).sum()
+    value = format_large_number(value)
+
     return create_card(
         'Credits',
-        f'{round(float(value), 2)} $',
+        f'{value} $',
         icons.credits_icon_url,
     )
 
@@ -90,11 +105,12 @@ def get_land_card(df):
 
     # Sum the filtered columns
     land_value = df[land_columns].sum().sum()  # Sum all rows and columns
+    land_value = format_large_number(land_value)
 
     # Create the card
     return create_card(
         'Land + Totem Claims',
-        f'{round(float(land_value), 2)} $',
+        f'{land_value} $',
         icons.land_icon_url_svg,
     )
 
@@ -123,11 +139,12 @@ def get_other_values_card(df):
 
     # Sum the remaining columns across all rows
     unused_value_total = df[unused_value_columns].sum().sum()
+    unused_value_total = format_large_number(unused_value_total)
 
     # Create the card
     return create_card(
         'Others',
-        f'{round(float(unused_value_total), 2)} $',
+        f'{unused_value_total} $',
         icons.credits_icon_url,  # Replace with an appropriate icon for this card
     )
 

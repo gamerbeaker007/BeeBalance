@@ -5,6 +5,7 @@ from src.api import spl
 from src.graphs import ke_ratio_graph
 from src.static import icons
 from src.util.card import create_card
+from src.util.large_number_util import format_large_number
 
 token_columns = [
     'SPS',
@@ -12,6 +13,7 @@ token_columns = [
     'DEC',
     'DEC-B',
     'LICENSE',
+    'ACTIVATED_LICENSE',
     'PLOT',
     'TRACT',
     'REGION',
@@ -94,28 +96,31 @@ def add_cards(sps_balances):
     col1, col2, col3 = st.columns(3)
 
     with col1:
+        sps_balance = format_large_number(safe_sum(sps_balances, 'SPS') + safe_sum(sps_balances, 'SPSP'))
         st.markdown(
             create_card(
                 "SPS + Staked SPS",
-                f"{safe_sum(sps_balances, 'SPS') + safe_sum(sps_balances, 'SPSP')} SPS",
+                f"{sps_balance} SPS",
                 icons.sps_icon_url,
             ),
             unsafe_allow_html=True,
         )
+        voucher_balance = format_large_number(safe_sum(sps_balances, 'VOUCHER'))
         st.markdown(
             create_card(
                 "VOUCHERS",
-                f"{safe_sum(sps_balances, 'VOUCHER')} VOUCHERS",
+                f"{voucher_balance} VOUCHERS",
                 icons.voucher_icon_url,
             ),
             unsafe_allow_html=True,
         )
 
     with col2:
+        dec_balance = format_large_number(safe_sum(sps_balances, 'DEC') + safe_sum(sps_balances, 'DEC-B'))
         st.markdown(
             create_card(
                 "DEC + DEC-B",
-                f"{safe_sum(sps_balances, 'DEC') + safe_sum(sps_balances, 'DEC-B')} DEC",
+                f"{dec_balance} DEC",
                 icons.dec_icon_url,
             ),
             unsafe_allow_html=True,
@@ -123,17 +128,19 @@ def add_cards(sps_balances):
         st.markdown(
             create_card(
                 "Validator License",
-                f"{safe_sum(sps_balances, 'LICENSE')} #",
+                f"{safe_sum(sps_balances, 'LICENSE')} # Inactive <br> "
+                f"{safe_sum(sps_balances, 'ACTIVATED_LICENSE')} # Actived",
                 icons.license_icon_url,
             ),
             unsafe_allow_html=True,
         )
 
     with col3:
+        credits_balance = format_large_number(safe_sum(sps_balances, 'CREDITS'))
         st.markdown(
             create_card(
                 "Credits",
-                f"{safe_sum(sps_balances, 'CREDITS')} CREDITS",
+                f"{credits_balance} CREDITS",
                 icons.credits_icon_url,
             ),
             unsafe_allow_html=True,

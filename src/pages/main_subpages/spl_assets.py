@@ -4,6 +4,7 @@ import streamlit as st
 from src.api import spl
 from src.static import icons
 from src.util.card import create_card
+from src.util.large_number_util import format_large_number
 
 extra_columns = [
     'collection_power',
@@ -68,10 +69,11 @@ def get_page(df):
 def add_cards(spl_assets):
     col1, col2 = st.columns(2)
     with col1:
+        value = format_large_number(spl_assets['collection_power'].sum())
         st.markdown(
             create_card(
                 "Collection Power",
-                f"{spl_assets['collection_power'].sum()} CP",
+                f"{value} CP",
                 icons.cards_icon_url,
             ),
             unsafe_allow_html=True,

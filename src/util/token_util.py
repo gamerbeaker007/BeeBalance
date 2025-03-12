@@ -17,6 +17,8 @@ def calculate_prices(df, balance_df, hive_in_dollar):
             token_market = hive_engine.get_market_with_retry('SLDICE')
         elif token == 'VOUCHER-G':
             token_market = hive_engine.get_market_with_retry('VOUCHER')
+        elif token == 'ACTIVATED_LICENSE':
+            token_market = hive_engine.get_market_with_retry('LICENSE')
         elif token == 'CREDITS':
             df[str(token.lower()) + '_qty'] = balance
             df[str(token.lower()) + '_value'] = round(balance * 0.001, 2)

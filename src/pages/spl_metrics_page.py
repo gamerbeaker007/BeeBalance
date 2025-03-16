@@ -17,7 +17,7 @@ METRIC_NAMES = {
     'dec_rewards': 'DEC Rewards',
     'market_vol': 'Market Volume',
     'market_vol_usd': 'Market Volume USD',
-    'mkt_cap_usd': 'Card Market CAP USD',
+    'mkt_cap_usd': 'Market CAP USD (Cards)',
     'sign_ups': 'Signups',
     'spellbooks': 'Spellbooks',
     'tx_total': 'Total transactions',

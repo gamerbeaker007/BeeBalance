@@ -195,8 +195,8 @@ def get_player_details(account_name: str) -> pd.DataFrame:
     return fetch_api_data(f"{API_URLS['base']}players/details", params={"name": account_name})
 
 
-@st.cache_data(ttl="1h")
-def get_metrics(metrics, from_date) -> pd.DataFrame:
+@st.cache_data(ttl="1d")
+def get_metrics(metrics=None, from_date=None) -> pd.DataFrame:
     """
     Fetch specific metrics.
     :param metrics: comma separated list of metrics that is needed
@@ -208,7 +208,7 @@ def get_metrics(metrics, from_date) -> pd.DataFrame:
         "from": from_date,
     }
     df = fetch_api_data(f"{API_URLS['base']}transactions/metrics", params=params)
-    if len(metrics.split(',')) > 1:
+    if not metrics or len(metrics.split(',')) > 1:
         return df
     else:
         return pd.DataFrame(df[df.metric == metrics]['values'].iloc[0])

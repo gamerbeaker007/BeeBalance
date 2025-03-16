@@ -1,10 +1,14 @@
 import plotly.graph_objects as go
 import streamlit as st
 
+from src.graphs import graph_util
 
-def add(df, log_y):
+
+def add(df):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
+
+    log_x, log_y = graph_util.get_chart_settings(False, True, "spsp")
 
     df = df.sort_values(by="SPSP", ascending=False)
 
@@ -25,7 +29,7 @@ def add(df, log_y):
     fig.update_layout(
         title="SPSP Holdings",
         xaxis_title="name",
-        yaxis_title="SPSP (Log scale)" if log_y else "SPSP",
+        yaxis_title="SPSP (Log Scale)" if log_y else "SPSP",
         yaxis=dict(type=y_axis_type, tickformat=".0f"),
         height=800,
         # yaxis=dict(type="log"),

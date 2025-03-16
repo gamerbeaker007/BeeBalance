@@ -1,10 +1,14 @@
 import plotly.graph_objects as go
 import streamlit as st
 
+from src.graphs import graph_util
 
-def add(df, log_x, log_y):
+
+def add(df):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].fillna(0).infer_objects(copy=False)
+
+    log_x, log_y = graph_util.get_chart_settings(True, True, "hp_spsp")
 
     fig = go.Figure()
 
@@ -42,8 +46,8 @@ def add(df, log_x, log_y):
     # Update layout
     fig.update_layout(
         title="SPSP vs HP with Posting Rewards Bubble size",
-        xaxis_title="HP",
-        yaxis_title="SPSP",
+        xaxis_title="HP (Log Scale)" if x_axis_type else "HP" ,
+        yaxis_title="SPSP (Log Scale)" if y_axis_type else "SPSP",
         xaxis=dict(type=x_axis_type, tickformat=".0f"),
         yaxis=dict(type=y_axis_type, tickformat=".0f"),
         height=800,

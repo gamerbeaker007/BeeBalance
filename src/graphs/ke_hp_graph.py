@@ -1,8 +1,12 @@
 import plotly.graph_objects as go
 import streamlit as st
 
+from src.graphs import graph_util
 
-def add(df, log_x, log_y):
+
+def add(df):
+    log_x, log_y = graph_util.get_chart_settings(True, True, "ke_hp")
+
     df = df.sort_values(by="hp", ascending=False).reset_index(drop=True)
 
     # Assign hp_rank (0 for highest HP, increasing downwards)

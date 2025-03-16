@@ -35,9 +35,6 @@ def create_page(account_list, sps_balances=None):
     else:
         result = st.session_state.last_result
 
-    log_x = st.checkbox("Log scale for X-axis?", value=False)
-    log_y = st.checkbox("Log scale for Y-axis?", value=True)
-
     if not result.empty:
         # Create tabs for each graph
         tab1, tab2, tab3, tab4 = st.tabs(["KE Ratio", "KE vs HP", "SPSP vs HP", "SPSP Distribution"])
@@ -66,7 +63,7 @@ def create_page(account_list, sps_balances=None):
                     * Are there outliers with exceptionally high KE Ratios (extractors)?
 
                     """, unsafe_allow_html=True)
-            ke_ratio_graph.add(result, log_x, log_y)
+            ke_ratio_graph.add(result)
 
         with tab2:
             with st.expander("KE vs HP Graph Explanation"):
@@ -97,7 +94,7 @@ def create_page(account_list, sps_balances=None):
                     """rewards earned.
 
                     """, unsafe_allow_html=True)
-            ke_hp_graph.add(result, log_x, log_y)
+            ke_hp_graph.add(result)
 
         with tab3:
             with st.expander("SPSP vs HP Graph Explanation"):
@@ -124,7 +121,7 @@ def create_page(account_list, sps_balances=None):
                 This graph helps understand whether strong HP holders are also staking SPSP and """
                             """how posting rewards relate to staking behavior.
                 """, unsafe_allow_html=True)
-            hp_spsp_graph.add(result, log_x, log_y)
+            hp_spsp_graph.add(result)
 
         with tab4:
             with st.expander("SPSP Distribution Graph Explanation"):
@@ -151,7 +148,7 @@ def create_page(account_list, sps_balances=None):
                 This graph helps in understanding the concentration of staking power and """
                             """whether SPSP is widely distributed or dominated by a few top holders.
                 """)
-            spsp_graph.add(result, log_y)
+            spsp_graph.add(result)
         st.dataframe(result, hide_index=True)
 
 

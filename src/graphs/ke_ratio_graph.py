@@ -1,6 +1,8 @@
 import plotly.graph_objects as go
 import streamlit as st
 
+from src.graphs import graph_util
+
 
 def determine_label(row):
     name = row['name']
@@ -10,9 +12,11 @@ def determine_label(row):
     return f"Name: {name}<br>SPSP: {spsp}<br>HP: {hp}<br>KE Ratio: {ke_ratio}"
 
 
-def add(df, log_x=False, log_y=True):
+def add(df):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
+
+    log_x, log_y = graph_util.get_chart_settings(True, True, "ke_ratio")
 
     # Helper function for the labels
     def determine_label(row):
@@ -71,8 +75,8 @@ def add(df, log_x=False, log_y=True):
     # Update figure layout
     fig.update_layout(
         title="KE Ratio vs HP with SPSP Bubble Size",
-        xaxis_title="HP (Log scale)" if log_x else "HP",
-        yaxis_title="KE Ratio (Log scale)" if log_y else "KE Ratio",
+        xaxis_title="HP (Log Scale)" if log_x else "HP",
+        yaxis_title="KE Ratio (Log Scale)" if log_y else "KE Ratio",
         xaxis=dict(type=x_axis_type, tickformat=".0f"),
         yaxis=dict(type=y_axis_type, tickformat=".0f"),
         height=800,

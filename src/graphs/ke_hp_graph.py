@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-def add(df):
+def add(df, log_x, log_y):
     df = df.sort_values(by="hp", ascending=False).reset_index(drop=True)
 
     # Assign hp_rank (0 for highest HP, increasing downwards)
@@ -73,14 +73,25 @@ def add(df):
         )
     )
 
+    # Decide whether to use log or linear scale
+    x_axis_type = 'log' if log_x else 'linear'
+    y_axis_type = 'log' if log_y else 'linear'
+
+    # Update figure layout
     fig.update_layout(
         title="HP vs KE Ratio & Total Rewards",
+        xaxis_title="HP (Log Scale)" if log_x else "HP Ratio",
+        yaxis_title="KE Ratio (Log Scale)" if log_y else "KE Ratio",
+        xaxis=dict(
+            type=x_axis_type,
+            tickformat=".0f"
+        ),
         yaxis=dict(
-            title="KE Ratio (Log Scale)",
-            type="log",
+            type=y_axis_type,
+            tickformat=".0f",
             showgrid=True
         ),
-        height=600,
+        height=800,
     )
 
     st.plotly_chart(fig, theme="streamlit")

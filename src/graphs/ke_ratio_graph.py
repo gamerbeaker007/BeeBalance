@@ -10,14 +10,19 @@ def determine_label(row):
     return f"Name: {name}<br>SPSP: {spsp}<br>HP: {hp}<br>KE Ratio: {ke_ratio}"
 
 
-def add(df):
+def add(df, log_x=False, log_y=True):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
 
-    # Create a Plotly scatter plot
+    # Helper function for the labels
+    def determine_label(row):
+        # Provide your custom label logic here, e.g., return f"HP: {row['hp']}, KE Ratio: {row['ke_ratio']}"
+        return f"HP: {round(row['hp'], 2)}, KE Ratio: {round(row['ke_ratio'], 2)}, SPSP: {round(row['SPSP'], 2)}"
+
+    # Create a Plotly figure
     fig = go.Figure()
 
-    # Add scatter plot for the bubbles
+    # Add a scatter trace for the bubbles
     fig.add_trace(
         go.Scatter(
             x=df['hp'],
@@ -27,8 +32,8 @@ def add(df):
                 size=df['SPSP'],  # Bubble size based on SPSP
                 sizemode='area',
                 sizeref=2. * max(df['SPSP']) / (40. ** 2),  # Normalize bubble size
-                color=df['ke_ratio'],  # Color by ke_ratio (optional gradient)
-                colorscale='Viridis',  # Adjust to preferred color scale
+                color=df['ke_ratio'],  # Color by ke_ratio
+                colorscale='Viridis',  # Color scale
                 showscale=True,
                 line=dict(
                     color='white',  # Border color
@@ -36,12 +41,12 @@ def add(df):
                 )
             ),
             text=[determine_label(row) for _, row in df.iterrows()],  # Hover text
-            hoverinfo='text',  # Show custom hover text
+            hoverinfo='text',
             name='Bubbles'
         )
     )
 
-    # Add vertical blue line for ke_ratio = 1
+    # Add a horizontal line for ke_ratio = 1 (blue)
     fig.add_shape(
         type="line",
         x0=min(df['hp']), x1=max(df['hp']),
@@ -50,7 +55,7 @@ def add(df):
         name="ke_ratio = 1"
     )
 
-    # Add vertical red line for ke_ratio = 3
+    # Add a horizontal line for ke_ratio = 3 (red)
     fig.add_shape(
         type="line",
         x0=min(df['hp']), x1=max(df['hp']),
@@ -59,12 +64,17 @@ def add(df):
         name="ke_ratio = 3"
     )
 
-    # Update layout
+    # Decide whether to use log or linear scale
+    x_axis_type = 'log' if log_x else 'linear'
+    y_axis_type = 'log' if log_y else 'linear'
+
+    # Update figure layout
     fig.update_layout(
         title="KE Ratio vs HP with SPSP Bubble Size",
-        xaxis_title="HP",
-        yaxis_title="KE Ratio (Log Scale)",
-        yaxis=dict(type="log"),  # Set y-axis to log scale
+        xaxis_title="HP (Log scale)" if log_x else "HP",
+        yaxis_title="KE Ratio (Log scale)" if log_y else "KE Ratio",
+        xaxis=dict(type=x_axis_type, tickformat=".0f"),
+        yaxis=dict(type=y_axis_type, tickformat=".0f"),
         height=800,
     )
 

@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-def add(df):
+def add(df, log_y):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
 
@@ -19,11 +19,14 @@ def add(df):
         )
     )
 
+    y_axis_type = 'log' if log_y else 'linear'
+
     # Update layout
     fig.update_layout(
         title="SPSP Holdings",
         xaxis_title="name",
-        yaxis_title="SPSP",
+        yaxis_title="SPSP (Log scale)" if log_y else "SPSP",
+        yaxis=dict(type=y_axis_type, tickformat=".0f"),
         height=800,
         # yaxis=dict(type="log"),
     )

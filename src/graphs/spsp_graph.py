@@ -8,7 +8,7 @@ def add(df):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
 
-    log_x, log_y = graph_util.get_chart_settings(False, True, "spsp")
+    log_x, log_y = graph_util.get_chart_settings(False, True, widget_suffix="spsp")
 
     df = df.sort_values(by="SPSP", ascending=False)
 

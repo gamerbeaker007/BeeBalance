@@ -8,7 +8,7 @@ def add(df):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].fillna(0).infer_objects(copy=False)
 
-    log_x, log_y = graph_util.get_chart_settings(True, True, "hp_spsp")
+    log_x, log_y = graph_util.get_chart_settings(True, True, widget_suffix="hp_spsp")
 
     fig = go.Figure()
 

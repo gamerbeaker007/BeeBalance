@@ -5,7 +5,7 @@ from src.graphs import graph_util
 
 
 def add(df):
-    log_x, log_y = graph_util.get_chart_settings(True, True, "ke_hp")
+    log_x, log_y = graph_util.get_chart_settings(True, True,  widget_suffix="ke_hp")
 
     df = df.sort_values(by="hp", ascending=False).reset_index(drop=True)
 

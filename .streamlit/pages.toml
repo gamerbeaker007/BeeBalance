@@ -17,3 +17,8 @@ icon = ':technologist:'
 path = 'src/pages/custom_queries_page.py'
 name = 'Custom Queries'
 icon = ':technologist:'
+
+[[pages]]
+path = 'src/pages/spl_metrics_page.py'
+name = 'SPL Metrics'
+icon = ':bar_chart:'

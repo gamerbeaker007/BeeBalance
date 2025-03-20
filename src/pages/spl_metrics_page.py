@@ -1,16 +1,14 @@
+import streamlit as st
 import logging
 from datetime import datetime, timedelta
 
 import pandas as pd
 import pytz
-import streamlit as st
 
 from src.api import spl
-
 from src.graphs import spl_metrics_graphs
 
 log = logging.getLogger("SPL Metrics")
-
 
 
 def display_period_buttons():
@@ -28,6 +26,10 @@ def display_period_buttons():
     # Initialize session state for toggle buttons
     if "selected_option" not in st.session_state:
         st.session_state.selected_option = 7
+        number_of_days_label = '7 Days'
+    else:
+        value = st.session_state.selected_option
+        number_of_days_label = next((key for key, val in options.items() if val == value), None)
 
     # Layout for toggle buttons
     cols = st.columns(len(options))
@@ -35,8 +37,10 @@ def display_period_buttons():
     for i, (label, days) in enumerate(options.items()):
         if cols[i].button(label, use_container_width=True):
             st.session_state.selected_option = days
+            number_of_days_label = label
 
-    # Get the selected duration
+    st.subheader(f"SPL Metrics for the last {number_of_days_label}")
+
     return st.session_state.selected_option
 
 
@@ -49,6 +53,7 @@ def filter_on_days(df, number_of_days):
     else:
         filtered_df = df
     return filtered_df
+
 
 def create_one_dataframe(df, number_of_days):
     df_exploded = df.explode("values")
@@ -66,11 +71,11 @@ def create_one_dataframe(df, number_of_days):
 
 
 def get_page():
-    st.title("SPL Metrics")
 
     df = spl.get_metrics()
 
     number_of_days = display_period_buttons()
+
     df = create_one_dataframe(df, number_of_days)
 
     username = st.text_input("Enter SPL user name (determine join date)")
@@ -84,7 +89,8 @@ def get_page():
         else:
             join_date = pd.to_datetime(user_df["join_date"]).iloc[0]
 
-    tab1, tab2, tab3 = st.tabs(["Battle Metrics", "Card Market Metrics", "User Metrics"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Battle Metrics", "Card Market Metrics", "User Metrics", "Transactions"])
+
     with tab1:
         st.subheader("Battle Metrics")
         spl_metrics_graphs.create_battle_graph(df)
@@ -97,3 +103,6 @@ def get_page():
         st.subheader("User Metrics")
         spl_metrics_graphs.create_user_graph(df, username, join_date, show_join_date)
 
+    with tab4:
+        st.subheader("Transactions")
+        spl_metrics_graphs.create_tx_graph(df, username, join_date, show_join_date)

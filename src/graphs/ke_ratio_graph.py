@@ -16,7 +16,7 @@ def add(df):
     # SPSP can be None / NaN so make them 0
     df["SPSP"] = df["SPSP"].astype(float).fillna(0.0)
 
-    log_x, log_y = graph_util.get_chart_settings(True, True, "ke_ratio")
+    log_x, log_y = graph_util.get_chart_settings(True, True, widget_suffix="ke_ratio")
 
     # Helper function for the labels
     def determine_label(row):

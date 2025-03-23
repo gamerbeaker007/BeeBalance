@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -205,24 +206,30 @@ def create_user_graph(df, username, join_date, show_join_date):
     if join_date and show_join_date:
         fig = add_user_join_line(fig, username, join_date, max_spellbooks)
 
+    full_date_range = pd.date_range(filtered_df["date"].min(), filtered_df["date"].max())
+
     # Add traces for each metric
     for metric in filtered_df.metric.unique():
-        metric_df = filtered_df[filtered_df["metric"] == metric]
+        metric_df = filtered_df[filtered_df["metric"] == metric].set_index("date")
+        metric_df = metric_df.reindex(full_date_range)  # Add missing dates
+        metric_df.index.name = "date"
+        metric_df.reset_index(inplace=True)
         metric_name = METRIC_NAMES.get(metric, metric)
 
         # Determine which y-axis to use
         if metric == "dau":
-            yaxis = "y3"  # Third y-axis
-        elif metric == "sign_ups":
             yaxis = "y2"  # Secondary y-axis
         else:
             yaxis = "y"  # Primary y-axis
+
+        connect_gaps = metric != "spellbooks"
 
         fig.add_trace(
             go.Scatter(
                 x=metric_df["date"],
                 y=metric_df["value"],
                 mode="lines+markers",
+                connectgaps=connect_gaps,
                 marker=dict(size=5, color=metric_colors.get(metric, "red")),
                 name=metric_name,
                 yaxis=yaxis  # Assign y-axis
@@ -234,22 +241,10 @@ def create_user_graph(df, username, join_date, show_join_date):
         xaxis=dict(tickformat="%Y-%m-%d"),
         yaxis=dict(
             type=y_axis_type,
-            title=METRIC_NAMES["spellbooks"],  # Primary Y-Axis
-            titlefont=dict(color=metric_colors["spellbooks"]),
-            tickfont=dict(color=metric_colors["spellbooks"]),
-            range=None if log_y else [0, max_spellbooks],
+            title=f'{METRIC_NAMES["sign_ups"]} And {METRIC_NAMES["spellbooks"]}  Purchases',  # Primary Y-Axis
+            range=None if log_y else [0, max(max_spellbooks, max_sing_ups)],
         ),
         yaxis2=dict(
-            type=y_axis_type,
-            title=METRIC_NAMES["sign_ups"],  # Second Y-Axis (right)
-            titlefont=dict(color=metric_colors["sign_ups"]),
-            tickfont=dict(color=metric_colors["sign_ups"]),
-            overlaying="y",
-            side="right",
-            showgrid=False,
-            range=None if log_y else [0, max_sing_ups],
-        ),
-        yaxis3=dict(
             type=y_axis_type,
             title=METRIC_NAMES["dau"],  # Third Y-Axis (far right)
             titlefont=dict(color=metric_colors["dau"]),

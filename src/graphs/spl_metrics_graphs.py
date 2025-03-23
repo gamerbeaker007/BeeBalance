@@ -204,7 +204,7 @@ def create_user_graph(df, username, join_date, show_join_date):
     max_spellbooks = filtered_df[filtered_df["metric"] == "spellbooks"]["value"].max() * 1.10
 
     if join_date and show_join_date:
-        fig = add_user_join_line(fig, username, join_date, max_spellbooks)
+        fig = add_user_join_line(fig, username, join_date, max_sing_ups)
 
     full_date_range = pd.date_range(filtered_df["date"].min(), filtered_df["date"].max())
 

@@ -13,6 +13,7 @@ params = {
     "posting_rewards_min": 10,
     "posting_rewards_max": 100,
     "months": 6,
+    "posts": 1,
     "comments": 5
 }
 
@@ -43,6 +44,7 @@ def test_add_section(mock_streamlit):
             - Hive Power (HP) - Between {params["hp_min"]} and {params["hp_max"]}
             - Reputation Score - Between {params["reputation_min"]} and {params["reputation_max"]}
             - Posting Rewards - Between  {params["posting_rewards_min"]} and {params["posting_rewards_max"]}
+            - Have made more than {params["posts"]} posts in the last {params["months"]}
             - Have been active in the last {params["months"]} months with minimal {params["comments"]} comments
         """
     st.markdown.assert_called_once_with(expected_markdown)

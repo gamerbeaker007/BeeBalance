@@ -233,48 +233,50 @@ def get_hive_balances_params(params):
     reputation_max = score_to_reputation(params['reputation_max'])
 
     query = f"""
-        SELECT
-            a.name,
-            a.balance AS hive,
-            a.savings_balance AS hive_savings,
-            a.hbd_balance AS hbd,
-            a.savings_hbd_balance AS hbd_savings,
-            a.reputation AS reputation,
-            a.vesting_shares AS vesting_shares,
-            a.delegated_vesting_shares AS delegated_vesting_shares,
-            a.received_vesting_shares AS received_vesting_shares,
-            a.curation_rewards / 1000.0 AS curation_rewards,
-            a.posting_rewards / 1000.0 AS posting_rewards,
-            COUNT(c.permlink) AS comment_count
-        FROM
-            Accounts a
-        JOIN
-            Comments c
-        ON
-            a.name = c.author
-        WHERE
-            a.posting_rewards > {params['posting_rewards_min']}
-            AND a.posting_rewards < {params['posting_rewards_max']}
-            AND a.vesting_shares > {vesting_shares_min}
-            AND a.vesting_shares < {vesting_shares_max}
-            AND a.reputation > {reputation_min}
-            AND a.reputation < {reputation_max}
-
-            AND c.created >= DATEADD(MONTH, -{params['months']}, GETDATE())
-        GROUP BY
-            a.name,
-            a.balance,
-            a.savings_balance,
-            a.hbd_balance,
-            a.savings_hbd_balance,
-            a.reputation,
-            a.vesting_shares,
-            a.delegated_vesting_shares,
-            a.received_vesting_shares,
-            a.curation_rewards,
-            a.posting_rewards
-        HAVING
-            COUNT(c.permlink) > {params['comments']};
+    SELECT
+    a.name,
+    a.balance AS hive,
+    a.savings_balance AS hive_savings,
+    a.hbd_balance AS hbd,
+    a.savings_hbd_balance AS hbd_savings,
+    a.reputation AS reputation,
+    a.vesting_shares AS vesting_shares,
+    a.delegated_vesting_shares AS delegated_vesting_shares,
+    a.received_vesting_shares AS received_vesting_shares,
+    a.curation_rewards / 1000.0 AS curation_rewards,
+    a.posting_rewards / 1000.0 AS posting_rewards,
+    COUNT(c.permlink) AS comment_count,
+    COUNT(CASE WHEN c.parent_author = '' THEN 1 END) AS post_count,
+    COUNT(CASE WHEN c.parent_author != '' AND c.parent_author != c.author THEN 1 END) AS replies
+FROM
+    Accounts a
+JOIN
+    Comments c
+ON
+    a.name = c.author
+WHERE
+    a.posting_rewards > {params['posting_rewards_min']}
+    AND a.posting_rewards < {params['posting_rewards_max']}
+    AND a.vesting_shares > {vesting_shares_min}
+    AND a.vesting_shares < {vesting_shares_max}
+    AND a.reputation > {reputation_min}
+    AND a.reputation < {reputation_max}
+    AND c.created >= DATEADD(MONTH, -{params['months']}, GETDATE())
+GROUP BY
+    a.name,
+    a.balance,
+    a.savings_balance,
+    a.hbd_balance,
+    a.savings_hbd_balance,
+    a.reputation,
+    a.vesting_shares,
+    a.delegated_vesting_shares,
+    a.received_vesting_shares,
+    a.curation_rewards,
+    a.posting_rewards
+HAVING
+    COUNT(c.permlink) > {params['comments']}
+    AND COUNT(CASE WHEN c.parent_author = '' THEN 1 END) > {params['posts']}
     """
 
     df = execute_query_df(query)

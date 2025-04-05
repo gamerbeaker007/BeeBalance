@@ -11,6 +11,7 @@ query_options = {
     "reputation": ("reputation_min", "reputation_max", 0, 100),
     "posting_rewards": ("posting_rewards_min", "posting_rewards_max", 500, 1000000000000),
     "months": ("months", 6),
+    "posts": ("posts", 1),
     "comments": ("comments", 10),
 }
 

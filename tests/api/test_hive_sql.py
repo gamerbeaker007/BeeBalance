@@ -298,6 +298,7 @@ def test_get_hive_balances_params(mock_execute_query_df):
         "posting_rewards_min": 10,
         "posting_rewards_max": 5000,
         "months": 3,
+        "posts": 1,
         "comments": 2,
     }
 

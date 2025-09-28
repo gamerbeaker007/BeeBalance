@@ -14,6 +14,11 @@ name = 'Top Holders'
 icon = ':technologist:'
 
 [[pages]]
+path = 'src/pages/balance_history_page.py'
+name = 'Balance History'
+icon = ':coin:'
+
+[[pages]]
 path = 'src/pages/custom_queries_page.py'
 name = 'Custom Queries'
 icon = ':technologist:'

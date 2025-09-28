@@ -15,14 +15,16 @@ def add(df):
     fig = go.Figure()
     for account_name in account_names:
         account_df = df[df["account_name"] == account_name]
-        filtered_df2 = (account_df.groupby(account_df["block_timestamp"].dt.to_period("M"))
-                        .first()
-                        .reset_index(drop=True))
+        idx = list(range(0, len(account_df), 100))
+        if len(account_df) > 0:
+            idx = sorted(set([0, len(account_df) - 1] + idx))
+        filtered_account_df = account_df.iloc[idx]
+
         for balance_type in BALANCE_TYPES_PRIMARY:
             fig.add_trace(
                 go.Scatter(
-                    x=filtered_df2["block_timestamp"].astype(str),
-                    y=filtered_df2[balance_type],
+                    x=filtered_account_df["block_timestamp"].astype(str),
+                    y=filtered_account_df[balance_type],
                     mode="lines+markers",
                     name=balance_type if isOne else f"{account_name} - {balance_type}",
                     yaxis="y"
@@ -31,8 +33,8 @@ def add(df):
         for balance_type in BALANCE_TYPES_SECONDARY:
             fig.add_trace(
                 go.Scatter(
-                    x=filtered_df2["block_timestamp"].astype(str),
-                    y=filtered_df2[balance_type],
+                    x=filtered_account_df["block_timestamp"].astype(str),
+                    y=filtered_account_df[balance_type],
                     mode="lines+markers",
                     name=balance_type if isOne else f"{account_name} - {balance_type}",
                     yaxis="y2"

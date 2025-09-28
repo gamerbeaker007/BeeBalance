@@ -1,6 +1,5 @@
 import logging
 
-import psycopg2
 from psycopg2 import pool
 import pandas as pd
 
@@ -17,10 +16,11 @@ _db_pool = None
 
 log = logging.getLogger('hafsql')
 
+
 def get_pool():
     global _db_pool
     if _db_pool is None:
-        _db_pool = psycopg2.pool.SimpleConnectionPool(
+        _db_pool = pool.SimpleConnectionPool(
             1, 10,
             host=DB_CONFIG['host'],
             port=DB_CONFIG['port'],
@@ -67,6 +67,7 @@ def fetch_balance_history(account_names):
         return pd.DataFrame()
     finally:
         db_pool.putconn(conn)
+
 
 def close_database_connection():
     global _db_pool

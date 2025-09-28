@@ -4,6 +4,7 @@ import streamlit as st
 BALANCE_TYPES_PRIMARY = ["hive", "hp", "hive_savings"]
 BALANCE_TYPES_SECONDARY = ["hbd", "hbd_savings"]
 
+
 def add(df):
     df = df.sort_values("block_timestamp")
     df.rename(columns={"hp_equivalent": "hp"}, inplace=True)
@@ -14,7 +15,9 @@ def add(df):
     fig = go.Figure()
     for account_name in account_names:
         account_df = df[df["account_name"] == account_name]
-        filtered_df2 = account_df.groupby(account_df["block_timestamp"].dt.to_period("M")).first().reset_index(drop=True)
+        filtered_df2 = (account_df.groupby(account_df["block_timestamp"].dt.to_period("M"))
+                        .first()
+                        .reset_index(drop=True))
         for balance_type in BALANCE_TYPES_PRIMARY:
             fig.add_trace(
                 go.Scatter(

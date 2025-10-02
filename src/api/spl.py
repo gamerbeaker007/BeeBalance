@@ -33,7 +33,7 @@ def configure_http_session() -> requests.Session:
     session = requests.Session()
     session.mount("https://", adapter)
     session.headers.update({
-        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Encoding": "gzip, deflate",
         "User-Agent": "BeeBalanced/1.0"
     })
     return session
@@ -203,10 +203,11 @@ def get_metrics(metrics=None, from_date=None) -> pd.DataFrame:
     :param from_date: string with from date e.g. 2020-12-31
     :return: if only one metric return the values else a dataframe with all the metrics and values
     """
-    params = {
-        "metrics": metrics,
-        "from": from_date,
-    }
+    params = {}
+    if metrics:
+        params["metrics"] = metrics
+    if from_date:
+        params["from"] = from_date
     df = fetch_api_data(f"{API_URLS['base']}transactions/metrics", params=params)
     if not metrics or len(metrics.split(',')) > 1:
         return df

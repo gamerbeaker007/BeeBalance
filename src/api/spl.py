@@ -82,7 +82,7 @@ def get_player_collection_df(username: str) -> pd.DataFrame:
     Fetch player card collection and return filtered DataFrame.
     """
     df = fetch_api_data(f"{API_URLS['base']}cards/collection/{username}", data_key="cards")
-    return df[["player", "uid", "card_detail_id", "collection_power", "xp", "gold", "edition", "level", "bcx",
+    return df[["player", "uid", "card_detail_id", "collection_power", "xp", "gold", "foil", "edition", "level", "bcx",
                "bcx_unbound"]] if not df.empty else df
 
 

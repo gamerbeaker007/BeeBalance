@@ -3,9 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from src.static.static_values_enum import Edition
-
 from src.api import spl
+from src.static.static_values_enum import edition_mapping
 
 log = logging.getLogger("Collection Util")
 
@@ -39,24 +38,26 @@ def get_card_edition_value(account, list_prices_df, market_prices_df):
         # Group all bxc and unbounded
         sellable_cards_df = group_bcx(sellable_cards_df)
 
-        for edition in Edition.__iter__():
+        for edition in edition_mapping.keys():
             log.debug(f'processing edition: {edition}')
-            temp_df = sellable_cards_df.loc[(sellable_cards_df.edition == edition.value)]
+            temp_df = sellable_cards_df.loc[(sellable_cards_df.edition == edition)]
             collection = get_collection_value(temp_df, list_prices_df, market_prices_df)
-            return_df[str(edition.name) + '_market_value'] = collection['market_value']
-            return_df[str(edition.name) + '_list_value'] = collection['list_value']
-            return_df[str(edition.name) + '_bcx'] = (player_collection[player_collection.edition
-                                                                       == edition.value].bcx.sum())
-            return_df[str(edition.name) + '_number_of_cards'] = player_collection[player_collection.edition
-                                                                                  == edition.value].index.size
+            return_df[str(edition) + '_market_value'] = collection['market_value']
+            return_df[str(edition) + '_list_value'] = collection['list_value']
+            return_df[str(edition) + '_bcx'] = \
+                player_collection[player_collection.edition == edition].bcx.sum()
+            return_df[str(edition) + '_number_of_cards'] = \
+                player_collection[player_collection.edition == edition].index.size
 
     return return_df
 
 
 def is_card_sellable(collection_card):
-    if collection_card.edition == Edition.gladius.value:
+    if collection_card.edition == 6:
         return False  # Gladius cards are never be sellable
-    elif collection_card.edition in [Edition.soulbound.value, Edition.soulboundrb.value]:
+    elif collection_card.edition in [10, 13]:
+        return collection_card.bcx == collection_card.bcx_unbound  # Sellable when its fully unbounded
+    elif collection_card.edition == 18 and collection_card.foil == 0:  # Only regular foils need to by unbound
         return collection_card.bcx == collection_card.bcx_unbound  # Sellable when its fully unbounded
     else:
         return True  # All other editions are always sellable

@@ -83,7 +83,7 @@ def test_get_player_collection_df(mock_session):
     mock_response = {
         "cards": [
             {"player": "testuser", "uid": "1", "card_detail_id": 10, "collection_power": 500, "xp": 100, "gold": False,
-             "edition": 3, "level": 2, "bcx": 1, "bcx_unbound": 1}
+             "foil": 0, "edition": 3, "level": 2, "bcx": 1, "bcx_unbound": 1}
         ]
     }
     mock_session.get(url, json=mock_response, status_code=200)
